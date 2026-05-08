@@ -1,0 +1,331 @@
+{
+  "case_id": "last_customer",
+  "title": "마지막 손님",
+  "tone": "seoul_noir",
+  "estimated_minutes": { "min": 35, "max": 50 },
+  "premise": "강남 골목 깊숙한 곳, 작은 와인바 '루나'. 어젯밤 폐점 직후 사장 정민호(48)가 자기 가게 안에서 시신으로 발견됐어요. 사인은 둔기에 의한 후두부 외상. 가게 안에는 폐점 시각인 23:30 이후의 결제 기록이 한 건 더 있었어요. 살해 추정 시각의 마지막 손님 4명, 그리고 사장에게 빚이 있던 친구. 의뢰인은 정민호의 누나로, '동생은 누구한테 원한 살 사람이 아니다'라고 해요. 시작하실까요, 탐정님?",
+
+  "ground_truth": {
+    "culprit": "park_junyoung",
+    "motive": "정민호가 박준영의 아내와 사적인 관계라는 사실을 알고, 박준영이 빚 변제를 빌미로 만나 추궁하다가 우발적으로 살해.",
+    "method": "23:35경 폐점 직후 단둘이 남았을 때, 카운터 옆 와인 보관대의 빈 와인병으로 후두부를 가격. 자신의 결제는 23:42에 처리된 카드 영수증으로 위장하려 했으나, 결제한 와인('샤또 마고 2015')은 그 시점에 가게에 한 병도 남아있지 않았다.",
+    "key_evidence": [
+      "ev_receipt_2342",
+      "ev_wine_inventory",
+      "ev_text_message",
+      "ev_broken_bottle",
+      "ev_wife_testimony"
+    ],
+    "smoking_gun": "박준영의 23:42 결제 영수증에 찍힌 와인은 그날 21:00에 마지막 한 병이 팔려나갔다 — 결제는 그가 사후에 만든 알리바이다."
+  },
+
+  "timeline": [
+    { "time": "20:45", "event": "정민호가 누나와 통화. '오늘 11시쯤 정리하고 들어갈게.'", "verifiable": true, "source": "ev_phone_log" },
+    { "time": "21:00", "event": "마지막 '샤또 마고 2015' 한 병이 다른 손님에게 판매됨.", "verifiable": true, "source": "ev_wine_inventory" },
+    { "time": "22:10", "event": "박준영이 가게 도착. 카운터에서 정민호와 짧게 대화.", "verifiable": true, "source": "ev_cctv_outside" },
+    { "time": "23:00", "event": "다른 손님 3명 모두 결제하고 퇴장.", "verifiable": true, "source": "ev_pos_log" },
+    { "time": "23:30", "event": "공식 폐점 시각.", "verifiable": true, "source": "ev_pos_log" },
+    { "time": "23:35", "event": "범행 발생 추정 (부검 기준 23:30~23:45).", "verifiable": true, "source": "ev_autopsy" },
+    { "time": "23:42", "event": "박준영의 신용카드로 '샤또 마고 2015' 1병 결제 — 실제로는 가게에 없는 와인.", "verifiable": true, "source": "ev_receipt_2342" },
+    { "time": "00:15", "event": "박준영이 가게에서 나오는 모습이 골목 CCTV에 잡힘.", "verifiable": true, "source": "ev_cctv_outside" },
+    { "time": "08:30", "event": "출근한 직원이 시신 발견, 신고.", "verifiable": true, "source": "ev_police_report" }
+  ],
+
+  "characters": [
+    {
+      "character_id": "victim_jung",
+      "name": "정민호",
+      "role": "victim",
+      "background": "48세 남성. 강남에서 작은 와인바 '루나'를 7년째 운영. 이혼 후 혼자 살았고, 와인 컬렉션과 단골들로 둘러싸인 조용한 삶을 즐겼다. 최근 6개월 사이 친한 친구 박준영의 아내 김유진과 가까워졌다.",
+      "relationship_to_victim": "본인 (피해자)",
+      "alibi": { "claimed": "-", "actual": "-", "is_lying": false },
+      "truth": ["김유진과 6개월간 연인 관계였다.", "박준영에게 3천만원을 빌려준 일이 있다.", "다음 주 가게를 정리하고 일본으로 떠날 계획이었다."],
+      "lies": [],
+      "emotional_state": { "initial": "calm", "anxiety_meter_start": 0, "breaks_at": 100 },
+      "voice_profile": { "ko_voice": "deep_male_50s", "en_voice": "weathered_male", "speech_quirks": "-" }
+    },
+    {
+      "character_id": "park_junyoung",
+      "name": "박준영",
+      "role": "suspect",
+      "background": "45세 남성. 정민호의 20년 절친. 작은 무역회사 운영. 최근 사업 부진으로 정민호에게 3천만원 빚. 결혼 12년차, 아내 김유진. 침착하고 말이 적은 편이지만, 거짓말을 할 때 손이 떨리는 버릇이 있다.",
+      "relationship_to_victim": "20년 절친. 빚 3천만원. 최근 아내와의 관계를 의심하기 시작.",
+      "alibi": {
+        "claimed": "23:42에 와인 한 병 사고 곧장 집에 갔다. 아내랑 영화 '기생충'을 다시 보고 잤다.",
+        "actual": "23:35경 정민호 살해 후, 알리바이 만들려고 가게 POS로 본인 카드 결제. 00:15에 나와 택시로 귀가. 아내는 이미 자고 있어 영화는 본 적 없음.",
+        "is_lying": true
+      },
+      "motive_to_kill": "아내 김유진과 정민호의 관계를 알게 되어, 빚 변제를 빌미로 만나 추궁하다 우발 살해.",
+      "truth": [
+        "정민호에게 3천만원 빚이 있다.",
+        "어젯밤 와인바에 갔다.",
+        "정민호와 20년 친구다."
+      ],
+      "lies": [
+        {
+          "topic": "어젯밤 본 영화",
+          "lie": "아내랑 '기생충'을 다시 봤어요.",
+          "truth_behind": "집에 도착했을 때 아내는 이미 자고 있었다. 영화는 보지 않았다.",
+          "breaks_at": "ev_wife_testimony"
+        },
+        {
+          "topic": "23:42 와인 결제",
+          "lie": "샤또 마고 한 병 사서 들고 갔어요. 정민호가 마지막으로 권한 와인이라.",
+          "truth_behind": "그 시점에 가게에 샤또 마고는 없었다. 알리바이 위조용 결제였다.",
+          "breaks_at": "ev_wine_inventory"
+        },
+        {
+          "topic": "아내와 정민호의 관계",
+          "lie": "둘이 친했어요. 가끔 가게에서 마주쳤겠죠. 그게 다예요.",
+          "truth_behind": "최근 아내의 휴대폰에서 정민호와의 메시지를 봤다. 격분한 상태였다.",
+          "breaks_at": "ev_text_message"
+        }
+      ],
+      "emotional_state": { "initial": "defensive", "anxiety_meter_start": 35, "breaks_at": 80 },
+      "voice_profile": { "ko_voice": "calm_male_40s", "en_voice": "tense_baritone", "speech_quirks": "긴장하면 짧게 침묵하다가 너무 자세히 설명함." }
+    },
+    {
+      "character_id": "kim_yujin",
+      "name": "김유진",
+      "role": "witness",
+      "background": "42세 여성. 박준영의 아내. 미술학원 강사. 정민호와 6개월간 비밀 연애. 사건 소식을 듣고 죄책감과 충격이 동시에. 직접적 살인 동기는 없으나 박준영을 의심하고 있다.",
+      "relationship_to_victim": "6개월간 연인. 남편 모르게.",
+      "alibi": {
+        "claimed": "어제 밤 11시쯤 잠자리에 들었고, 남편이 들어온 시각은 모른다.",
+        "actual": "사실과 같음. 단, 남편의 차 시동 소리에 한 번 깼고 시계는 00:30이었다.",
+        "is_lying": false
+      },
+      "truth": [
+        "정민호와 6개월간 연인 관계였다.",
+        "남편이 알게 됐다는 느낌을 최근 받았다.",
+        "남편이 들어온 시각은 정확히 모르지만, 00:30경 차 시동 소리에 깼다.",
+        "남편이 어젯밤 영화를 같이 본 사실은 없다."
+      ],
+      "lies": [],
+      "emotional_state": { "initial": "grief", "anxiety_meter_start": 60, "breaks_at": 90 },
+      "voice_profile": { "ko_voice": "soft_female_40s", "en_voice": "fragile_alto", "speech_quirks": "단어 사이 호흡이 길다. 때때로 말끝을 흐림." }
+    },
+    {
+      "character_id": "lee_minji",
+      "name": "이민지",
+      "role": "witness",
+      "background": "29세 여성. 와인바 '루나'의 유일한 직원. 알바 3년차. 사장과 손님들 사이의 관계를 가장 잘 안다. 21:30에 퇴근.",
+      "relationship_to_victim": "고용주. 친밀하지만 거리감 있는 관계.",
+      "alibi": { "claimed": "21:30에 퇴근, 그 후엔 집에서 잤어요.", "actual": "사실과 같음.", "is_lying": false },
+      "truth": [
+        "정민호 사장이 박준영에게 3천만원을 빌려줬다는 걸 안다.",
+        "'샤또 마고 2015'는 21:00에 마지막 한 병이 다른 단골에게 팔렸다.",
+        "박준영이 최근 자주 가게에 와서 정민호와 다투는 듯한 분위기였다.",
+        "정민호가 일본으로 떠날 계획이라는 걸 들었다."
+      ],
+      "lies": [],
+      "emotional_state": { "initial": "nervous", "anxiety_meter_start": 30, "breaks_at": 95 },
+      "voice_profile": { "ko_voice": "young_female_20s", "en_voice": "bright_alto", "speech_quirks": "빠르게 말하고 자주 '음...'으로 시작함." }
+    },
+    {
+      "character_id": "choi_dongsoo",
+      "name": "최동수",
+      "role": "witness",
+      "background": "55세 남성. 단골 손님. 사건 당일 21:00에 '샤또 마고 2015' 마지막 한 병을 사서 갔다. 정민호와 가벼운 친분. 알리바이 명확.",
+      "relationship_to_victim": "단골 손님. 호의적 관계.",
+      "alibi": { "claimed": "21:30에 가게 나와서 친구들과 노래방 갔어요. 새벽 2시까지.", "actual": "사실과 같음. CCTV로 입증 가능.", "is_lying": false },
+      "truth": [
+        "21:00에 '샤또 마고 2015' 마지막 한 병을 샀다.",
+        "그 와인이 가게의 마지막 재고였다고 정민호가 직접 말했다.",
+        "박준영이 22시쯤 들어오는 걸 가게에서 봤다."
+      ],
+      "lies": [],
+      "emotional_state": { "initial": "calm", "anxiety_meter_start": 10, "breaks_at": 100 },
+      "voice_profile": { "ko_voice": "warm_male_50s", "en_voice": "jovial_baritone", "speech_quirks": "웃으면서 말함. 사투리 살짝(부산)." }
+    }
+  ],
+
+  "evidence": [
+    {
+      "evidence_id": "ev_broken_bottle",
+      "category": "physical",
+      "name": "깨진 와인병",
+      "description": "카운터 안쪽 바닥, 정민호 사장의 머리 근처에 깨진 와인병 하나가 떨어져 있어요. 라벨이 절반쯤 떨어져 있지만 '샤또 마고'로 보여요. 병 안엔 와인이 거의 남아있지 않고, 깨진 단면에 정 사장의 혈흔.",
+      "discoverable_at": ["scene_crime_scene"],
+      "discovery_hints": ["바닥 살펴봐", "시신 주변 확인해", "와인 보관대 봐"],
+      "implication": "범행 도구. 그러나 라벨이 '샤또 마고'라면, 그날 21:00에 마지막 한 병이 팔린 그 와인이 어떻게 여기에?",
+      "contradicts": ["park_junyoung:23:42 와인 결제"]
+    },
+    {
+      "evidence_id": "ev_receipt_2342",
+      "category": "document",
+      "name": "23:42 결제 영수증",
+      "description": "POS 시스템에 23:42에 박준영 명의 카드로 '샤또 마고 2015' 1병, 35만원 결제가 찍혀 있어요. 폐점 12분 후의 결제예요.",
+      "discoverable_at": ["scene_crime_scene", "scene_pos_terminal"],
+      "discovery_hints": ["계산대 봐", "POS 영수증 확인", "어젯밤 결제 기록"],
+      "implication": "박준영이 폐점 후에도 가게에 있었다는 증거. 그러나 결제한 와인이 그 시각에 존재하지 않았다면?",
+      "contradicts": ["park_junyoung:23:42 와인 결제"]
+    },
+    {
+      "evidence_id": "ev_wine_inventory",
+      "category": "document",
+      "name": "와인 재고 장부",
+      "description": "사장이 손글씨로 적은 재고 장부. '샤또 마고 2015'는 사건 당일 마지막 1병이 21:00에 판매되어 0병이 됐다고 적혀 있어요. 다음 입고 예정은 다음 주.",
+      "discoverable_at": ["scene_crime_scene", "scene_wine_cellar"],
+      "discovery_hints": ["재고 장부 찾아봐", "와인 셀러 살펴", "사장이 뭘 적어뒀는지"],
+      "implication": "23:42에 박준영이 결제한 '샤또 마고'는 가게에 존재할 수 없었다. 결제는 알리바이 위조다.",
+      "contradicts": ["park_junyoung:23:42 와인 결제"]
+    },
+    {
+      "evidence_id": "ev_text_message",
+      "category": "testimony",
+      "name": "정민호의 휴대폰 메시지",
+      "description": "정 사장 휴대폰의 잠금이 풀려 있어요. 김유진과 6개월간 주고받은 메시지가 그대로 남아있고, 마지막 메시지는 사건 3일 전 — '준영이가 눈치챈 것 같아. 우리 정리하자.'",
+      "discoverable_at": ["scene_crime_scene"],
+      "discovery_hints": ["휴대폰 살펴", "사장 소지품 확인"],
+      "implication": "정민호와 김유진의 관계. 박준영의 동기가 단순 빚이 아니라는 단서.",
+      "contradicts": ["park_junyoung:아내와 정민호의 관계"]
+    },
+    {
+      "evidence_id": "ev_wife_testimony",
+      "category": "testimony",
+      "name": "김유진의 증언",
+      "description": "박준영의 아내 김유진은 '어젯밤 11시쯤 잠들었고, 남편이 차를 세우는 소리에 잠깐 깼는데 시계가 00:30이었다'고 진술. 영화를 함께 본 적은 없다고 명확히 부인.",
+      "discoverable_at": ["scene_park_home"],
+      "discovery_hints": ["아내 만나봐", "박준영 집 가봐"],
+      "implication": "박준영의 알리바이('아내랑 영화 봤다') 정면 부정. 도착 시각도 본인 진술과 다름.",
+      "contradicts": ["park_junyoung:어젯밤 본 영화"]
+    },
+    {
+      "evidence_id": "ev_phone_log",
+      "category": "document",
+      "name": "정민호의 통화 기록",
+      "description": "20:45에 누나와의 통화. 22:50에 박준영의 짧은 부재중 통화 1건. 그 외엔 조용한 밤이었어요.",
+      "discoverable_at": ["scene_crime_scene"],
+      "discovery_hints": ["통화 기록", "누구랑 통화했는지"],
+      "implication": "박준영이 도착 후에도 한 번 더 정민호에게 전화한 흔적. 무언가 결심한 듯한 패턴.",
+      "contradicts": []
+    },
+    {
+      "evidence_id": "ev_cctv_outside",
+      "category": "physical",
+      "name": "골목 CCTV",
+      "description": "가게 맞은편 편의점 CCTV. 박준영이 22:10에 들어가는 모습, 그리고 00:15에 혼자 나와 택시 잡는 모습이 또렷이 잡혀 있어요.",
+      "discoverable_at": ["scene_alley"],
+      "discovery_hints": ["편의점 CCTV", "골목 살펴", "주변 카메라"],
+      "implication": "박준영이 폐점(23:30) 후 45분이나 가게에 더 머물렀다. 23:42 결제로는 설명되지 않는 시간.",
+      "contradicts": []
+    },
+    {
+      "evidence_id": "ev_autopsy",
+      "category": "document",
+      "name": "부검 보고서",
+      "description": "사인은 둔기에 의한 후두부 외상. 추정 시각 23:30~23:45. 흉기는 두꺼운 유리로 추정 — 깨진 와인병과 일치.",
+      "discoverable_at": ["scene_morgue"],
+      "discovery_hints": ["부검 결과", "사인 확인"],
+      "implication": "추정 시각이 박준영의 결제 시각(23:42)과 정확히 겹친다. 그가 그 시각 가게 안에 있었다는 뜻.",
+      "contradicts": []
+    },
+    {
+      "evidence_id": "ev_pos_log",
+      "category": "document",
+      "name": "POS 결제 로그 전체",
+      "description": "그날의 모든 결제 기록. 21:00 최동수 — 샤또 마고. 22:30~23:00 사이 다른 손님 3명 결제. 23:42 박준영. 그 이후 결제 없음.",
+      "discoverable_at": ["scene_pos_terminal"],
+      "discovery_hints": ["전체 결제 내역", "POS 로그 다 보여줘"],
+      "implication": "타임라인 재구성의 기초. 23:00 이후 가게에 남은 손님은 박준영 한 명.",
+      "contradicts": []
+    },
+    {
+      "evidence_id": "ev_police_report",
+      "category": "document",
+      "name": "초동 수사 보고서",
+      "description": "08:30 직원 이민지의 신고. 출동 경찰의 현장 기록. 외부 침입 흔적 없음. 가게 셔터는 안에서 잠겨 있었으나, 직원 출입구는 잠기지 않은 상태.",
+      "discoverable_at": ["scene_crime_scene"],
+      "discovery_hints": ["경찰 보고서", "초동 수사"],
+      "implication": "외부 침입 가능성 낮음. 범인은 정민호가 직접 들여보낸 사람.",
+      "contradicts": []
+    }
+  ],
+
+  "scenes": [
+    {
+      "scene_id": "scene_crime_scene",
+      "name": "와인바 '루나' — 사건 현장",
+      "description": "강남 골목 끝의 작은 와인바. 어두운 우드톤 인테리어, 높은 와인 셀러, 카운터 8석. 사장의 시신은 카운터 안쪽 바닥에 누워 있고, 주변엔 깨진 유리 조각과 마른 와인 자국. 가게 안엔 정적과 어렴풋한 노을빛만.",
+      "ambient_sound": "냉장고 모터 소음, 멀리서 도시 소음, 깨진 유리 조각의 작은 떨림",
+      "objects": [
+        { "name": "카운터", "description": "오래된 호두나무 카운터. 사건이 시작된 자리.", "interactive": true, "reveals_evidence": "ev_receipt_2342" },
+        { "name": "와인 보관대", "description": "벽면 가득한 와인 셀러.", "interactive": true, "reveals_evidence": "ev_wine_inventory" },
+        { "name": "시신 주변", "description": "정 사장의 마지막 자리.", "interactive": true, "reveals_evidence": "ev_broken_bottle" },
+        { "name": "사장의 휴대폰", "description": "테이블 위에 놓인 잠금 풀린 휴대폰.", "interactive": true, "reveals_evidence": "ev_text_message" }
+      ]
+    },
+    {
+      "scene_id": "scene_alley",
+      "name": "가게 앞 골목",
+      "description": "조용한 골목. 가게 맞은편엔 24시간 편의점, 옆엔 작은 한식당. 길바닥엔 마른 담배꽁초와 빗물 자국.",
+      "ambient_sound": "도시의 새벽 소음, 멀리 차 지나가는 소리, 편의점 자동문 챙",
+      "objects": [
+        { "name": "편의점", "description": "24시간 편의점. CCTV가 가게 입구를 정면으로 비춤.", "interactive": true, "reveals_evidence": "ev_cctv_outside" }
+      ]
+    },
+    {
+      "scene_id": "scene_park_home",
+      "name": "박준영의 자택 거실",
+      "description": "강남 외곽의 30평대 아파트. 김유진은 거실 소파 끝에 앉아 손에 휴지를 쥔 채 떨고 있어요.",
+      "ambient_sound": "아파트의 무거운 정적, 시계 초침, 멀리서 들리는 가족 단지의 인기척",
+      "objects": [
+        { "name": "김유진", "description": "박준영의 아내. 사건 소식을 듣고 무너진 표정.", "interactive": true, "reveals_evidence": "ev_wife_testimony" }
+      ]
+    },
+    {
+      "scene_id": "scene_pos_terminal",
+      "name": "와인바 카운터 — POS 단말",
+      "description": "카운터 안쪽의 작은 POS 단말. 화면이 켜져 있고 어제의 마지막 결제 기록이 그대로 떠 있어요.",
+      "ambient_sound": "단말 팬 돌아가는 소리",
+      "objects": [
+        { "name": "POS 화면", "description": "결제 로그 전체.", "interactive": true, "reveals_evidence": "ev_pos_log" }
+      ]
+    },
+    {
+      "scene_id": "scene_morgue",
+      "name": "국과수 부검실",
+      "description": "차갑고 무균실 같은 공간. 담당 검안의가 보고서를 펼쳐놓고 기다리고 있어요.",
+      "ambient_sound": "환풍기, 형광등 미세한 윙윙거림",
+      "objects": [
+        { "name": "부검 보고서", "description": "정민호의 부검 결과.", "interactive": true, "reveals_evidence": "ev_autopsy" }
+      ]
+    },
+    {
+      "scene_id": "scene_wine_cellar",
+      "name": "와인바 안쪽 — 와인 셀러",
+      "description": "가게 뒤편의 와인 보관실. 빈 상자, 손글씨 장부, 라벨이 가지런히 정리된 보관대.",
+      "ambient_sound": "냉방기 저음, 와인병들 사이의 정적",
+      "objects": [
+        { "name": "재고 장부", "description": "정 사장의 손글씨 재고 노트.", "interactive": true, "reveals_evidence": "ev_wine_inventory" }
+      ]
+    }
+  ],
+
+  "deduction": {
+    "minimum_evidence_required": [
+      "ev_receipt_2342",
+      "ev_wine_inventory",
+      "ev_text_message"
+    ],
+    "endings": {
+      "perfect": {
+        "criteria": "범인=박준영, 동기=아내와의 관계+빚, 핵심 증거=영수증·재고·메시지 3종 모두 인용",
+        "narration": "법정에서 박준영은 결국 모든 것을 인정했어요. '그날 밤, 정민호가 마지막으로 권한 와인을 들고 나가는 척하고 싶었어요. 그 친구가 너무 미웠지만, 죽일 생각은 없었어요.' 사건은 종결됐고, 의뢰인 — 정민호의 누나는 당신에게 짧은 편지 한 장을 남겼어요. '동생이 마지막에 만난 사람이 누군지 알게 해줘서 고마워요.' 명성 +50."
+      },
+      "conviction": {
+        "criteria": "범인=박준영, 동기는 부분 정확(빚만 언급, 아내 관계 누락) 또는 핵심 증거 1~2개만 인용",
+        "narration": "박준영은 기소됐지만, 변호사의 반박으로 동기 입증이 약했어요. 살인보다 가벼운 과실치사로 감형됐고, 사건은 종결됐지만 어딘가 미진해요. 명성 +25."
+      },
+      "wrong_suspect": {
+        "criteria": "범인을 박준영이 아닌 다른 인물로 지목",
+        "narration": "당신의 추리는 법정에서 무너졌어요. 진범은 자유로워졌고, 의뢰인은 당신을 다시 찾지 않을 거예요. 그러나 사건 노트는 그대로 남아 있어요 — 다시 시작할 수 있어요. 명성 +0."
+      },
+      "inconclusive": {
+        "criteria": "추리 거부, 또는 동기/범인 모두 답하지 못함",
+        "narration": "사건은 미해결로 분류됐어요. 콜드케이스 폴더에 들어갔고, 누군가 다시 열어보기 전까진 거기 남아 있을 거예요. 단서 발견 수만큼 부분 명성. +10."
+      }
+    }
+  }
+}

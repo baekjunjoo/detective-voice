@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Detective Voice — 마지막 손님 (체험판)</title>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg-elev: #11141b;
+    --bg-elev-2: #181c25;
+    --line: #232733;
+    --text: #e8eaf0;
+    --text-dim: #9aa0ad;
+    --text-soft: #c5c9d3;
+    --accent: #d4a35c;
+    --accent-soft: #8c6b3c;
+    --danger: #c66060;
+    --good: #5fa68f;
+    --warn: #c9a25a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: radial-gradient(ellipse at top, #131722 0%, #0a0c10 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px; margin-bottom: 24px;
+  }
+  header .brand {
+    font-weight: 600; letter-spacing: 0.04em; font-size: 13px;
+    color: var(--accent);
+  }
+  header .title {
+    font-size: 22px; font-weight: 600; margin-top: 4px;
+  }
+  header .sub {
+    font-size: 12px; color: var(--text-dim);
+  }
+  .panel {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+  }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 14px; font-weight: 600; letter-spacing: 0.06em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .aria-box {
+    background: linear-gradient(180deg, rgba(212,163,92,0.06) 0%, transparent 100%);
+    border: 1px solid rgba(212,163,92,0.25);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .aria-box .label {
+    font-size: 11px; letter-spacing: 0.18em;
+    color: var(--accent); margin-bottom: 8px; font-weight: 600;
+  }
+  .aria-box .text {
+    font-size: 16px; color: var(--text-soft); white-space: pre-wrap;
+  }
+  .aria-box .speak {
+    margin-top: 12px;
+    background: transparent; border: 1px solid var(--accent-soft);
+    color: var(--accent); font-size: 12px;
+    padding: 6px 12px; border-radius: 999px; cursor: pointer;
+    font-family: inherit;
+  }
+  .aria-box .speak:hover { background: rgba(212,163,92,0.1); }
+  .grid { display: grid; gap: 10px; }
+  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 600px) { .grid.cols-2 { grid-template-columns: 1fr; } }
+  button.action, .grid > button {
+    text-align: left;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  button.action:hover, .grid > button:hover {
+    border-color: var(--accent-soft);
+    background: #1c2230;
+  }
+  button.action.disabled, button.action[disabled] {
+    opacity: 0.4; cursor: not-allowed;
+  }
+  button.action.found {
+    border-color: var(--good);
+    background: rgba(95,166,143,0.08);
+  }
+  .meta { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .npc-line {
+    font-size: 15px; color: var(--text-soft);
+    background: var(--bg-elev-2);
+    border-left: 3px solid var(--accent-soft);
+    padding: 12px 16px; border-radius: 6px;
+    margin: 10px 0;
+    white-space: pre-wrap;
+  }
+  .npc-name { color: var(--accent); font-weight: 600; font-size: 13px; }
+  .anxiety {
+    display: inline-block; margin-left: 10px; font-size: 11px;
+    color: var(--text-dim);
+  }
+  .anxiety.high { color: var(--danger); }
+  .anxiety.mid { color: var(--warn); }
+  .notes ul { padding-left: 20px; margin: 8px 0; }
+  .notes li { color: var(--text-soft); font-size: 14px; padding: 4px 0; }
+  .footer {
+    margin-top: 32px; text-align: center; font-size: 12px;
+    color: var(--text-dim);
+  }
+  .progress {
+    display: flex; gap: 6px; margin-bottom: 20px;
+  }
+  .progress .dot {
+    height: 4px; flex: 1; background: var(--line); border-radius: 2px;
+  }
+  .progress .dot.active { background: var(--accent); }
+  .progress .dot.done { background: var(--good); }
+  .stage-title {
+    font-size: 11px; color: var(--text-dim); letter-spacing: 0.2em;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .ending {
+    background: linear-gradient(180deg, rgba(212,163,92,0.12), transparent);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 18px;
+    text-align: center;
+  }
+  .ending.bad { border-color: var(--danger); background: linear-gradient(180deg, rgba(198,96,96,0.12), transparent); }
+  .ending.mid { border-color: var(--warn); background: linear-gradient(180deg, rgba(201,162,90,0.12), transparent); }
+  .ending h3 { margin: 0 0 8px; font-size: 18px; }
+  .ending p { color: var(--text-soft); font-size: 14px; }
+  .restart {
+    margin-top: 20px;
+    background: var(--accent); color: #0a0c10;
+    border: 0; padding: 12px 24px; border-radius: 999px;
+    font-weight: 600; cursor: pointer; font-family: inherit; font-size: 14px;
+  }
+  .badge {
+    display: inline-block; font-size: 10px; letter-spacing: 0.1em;
+    padding: 2px 8px; border-radius: 999px; text-transform: uppercase;
+    background: var(--bg-elev-2); color: var(--text-dim); margin-right: 6px;
+  }
+  .hint {
+    font-size: 12px; color: var(--text-dim); margin-top: 8px; font-style: italic;
+  }
+  .legend {
+    background: rgba(212,163,92,0.06);
+    border: 1px dashed rgba(212,163,92,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px; color: var(--text-soft);
+    margin-bottom: 16px;
+    line-height: 1.7;
+  }
+  .legend strong { color: var(--accent); }
+  select, input[type="text"] {
+    background: var(--bg-elev-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    width: 100%;
+    margin-top: 6px;
+  }
+  label { font-size: 13px; color: var(--text-dim); display: block; margin-top: 12px; }
+  .submit-deduction {
+    margin-top: 20px;
+    background: var(--accent);
+    color: #0a0c10;
+    border: 0; padding: 14px 28px; border-radius: 8px;
+    font-weight: 600; cursor: pointer; font-family: inherit; font-size: 14px;
+    width: 100%;
+  }
+  .submit-deduction:hover { background: #e8b86d; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="brand">DOT GAMES · DETECTIVE VOICE</div>
+      <div class="title">마지막 손님</div>
+      <div class="sub">체험판 · 약 7분</div>
+    </div>
+    <div class="sub">시그니처 사건 #1</div>
+  </header>
+
+  <div class="legend">
+    <strong>이건 코드 없이 클릭만으로 사건을 체험하는 데모예요.</strong> 실제 게임은 화면 없이 <em>음성</em>으로, AI가 <em>자유로운 대화</em>로 진행해요. 이 페이지는 사건의 구조와 흐름을 눈으로 보기 위한 도우미예요. 🔊 버튼을 누르면 Aria의 음성이 재생돼요.
+  </div>
+
+  <div class="progress" id="progress">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+  <div class="stage-title" id="stage-title">단계 1 · 사건 브리핑</div>
+
+  <div id="app"></div>
+
+  <div class="footer">
+    Detective Voice · Phase 0 데모 · 음성 생략, AI 자유 대화 생략, 사건 구조만.
+  </div>
+</div>
+
+<script>
+// ============ 게임 데이터 (사건 JSON 요약본) ============
+const CASE = {
+  premise: "강남 골목 깊숙한 곳, 작은 와인바 '루나'. 어젯밤 폐점 직후 사장 정민호(48)가 자기 가게 안에서 시신으로 발견됐어요. 사인은 둔기에 의한 후두부 외상. 가게 안에는 폐점 시각인 23시 30분 이후의 결제 기록이 한 건 더 있었어요. 살해 추정 시각의 마지막 손님 4명, 그리고 사장에게 빚이 있던 친구. 의뢰인은 정민호의 누나로, '동생은 누구한테 원한 살 사람이 아니다'라고 해요.\n\n시작하실까요, 탐정님?",
+  scenes: [
+    {
+      id: "scene_crime_scene",
+      name: "와인바 '루나' — 사건 현장",
+      desc: "어두운 우드톤 인테리어. 카운터 안쪽 바닥에 사장의 시신이 누워 있어요. 주변엔 깨진 유리 조각과 마른 와인 자국. 가게 안엔 정적과 어렴풋한 노을빛만.",
+      objects: [
+        { name: "시신 주변", revealsId: "ev_broken_bottle", desc: "[찰칵] 정 사장의 머리 근처에 깨진 와인병 하나. 라벨이 절반 떨어져 있지만 '샤또 마고'로 보여요. 단면에 정 사장의 혈흔. 사건 노트에 추가했어요." },
+        { name: "카운터 위", revealsId: "ev_receipt_2342", desc: "[찰칵] POS 영수증 한 장. 폐점 12분 후인 23시 42분, 박준영 명의 카드로 '샤또 마고 2015' 한 병 결제. 사건 노트에 추가했어요." },
+        { name: "사장의 휴대폰", revealsId: "ev_text_message", desc: "[찰칵] 잠금이 풀려 있어요. 김유진과 6개월간 주고받은 메시지가 그대로. 마지막 메시지 — '준영이가 눈치챈 것 같아. 우리 정리하자.' 사건 노트에 추가했어요." },
+        { name: "와인 보관실", revealsId: "ev_wine_inventory", desc: "[찰칵] 사장의 손글씨 재고 장부. '샤또 마고 2015'는 사건 당일 마지막 1병이 21시에 다른 손님에게 팔려 0병이 됐어요. 다음 입고는 다음 주. 사건 노트에 추가했어요." }
+      ]
+    },
+    {
+      id: "scene_alley",
+      name: "가게 앞 골목",
+      desc: "조용한 골목. 가게 맞은편엔 24시간 편의점, 옆엔 작은 한식당.",
+      objects: [
+        { name: "편의점 CCTV", revealsId: "ev_cctv_outside", desc: "[찰칵] 편의점 CCTV. 박준영이 22시 10분에 가게로 들어가는 모습, 그리고 0시 15분에 혼자 나와 택시 잡는 모습이 또렷이 잡혀 있어요. 폐점 후 45분이나 더 머물렀어요. 사건 노트에 추가했어요." }
+      ]
+    },
+    {
+      id: "scene_morgue",
+      name: "국과수 부검실",
+      desc: "차갑고 무균실 같은 공간. 담당 검안의가 보고서를 펼쳐놓고 기다리고 있어요.",
+      objects: [
+        { name: "부검 보고서", revealsId: "ev_autopsy", desc: "[찰칵] 사인은 둔기에 의한 후두부 외상. 추정 시각 23시 30분~23시 45분. 흉기는 두꺼운 유리 — 깨진 와인병과 일치. 사건 노트에 추가했어요." }
+      ]
+    },
+    {
+      id: "scene_park_home",
+      name: "박준영의 자택 거실",
+      desc: "강남 외곽 30평대 아파트. 김유진이 거실 소파 끝에 앉아 있어요.",
+      objects: [] // 김유진 인터뷰는 NPC 심문에서
+    }
+  ],
+  npcs: [
+    {
+      id: "park_junyoung",
+      name: "박준영",
+      role: "용의자 · 정민호의 절친 · 빚 3천만원",
+      anxietyStart: 35,
+      anxietyBreak: 80,
+      questions: [
+        {
+          q: "어젯밤 어디 있었어요?",
+          a: "[한숨] ...집에 있었어요. 아내랑 같이 영화 보고 잤습니다.",
+          delta: 5,
+          requires: null
+        },
+        {
+          q: "어떤 영화요?",
+          a: "어... '기생충'이요. 다시 보고 있었어요.",
+          delta: 5,
+          requires: null
+        },
+        {
+          q: "사장한테 빚이 있었다고 들었는데",
+          a: "[침묵] ...누가 그래요? ...그래요, 좀 빌렸어요. 갚으려 했어요. 정말 갚으려 했어.",
+          delta: 10,
+          requires: null
+        },
+        {
+          q: "23시 42분 영수증 봤어요. 와인 한 병 결제하셨던데",
+          a: "샤또 마고 한 병 사서 들고 갔어요. 정민호가 마지막으로 권한 와인이라.",
+          delta: 8,
+          requires: "ev_receipt_2342"
+        },
+        {
+          q: "그날 가게엔 샤또 마고가 한 병도 없었어요. 21시에 다 팔렸거든요",
+          a: "[떨림] ...그럴 리가 없는데. 분명히... [작게] 분명히 결제했어요.",
+          delta: 25,
+          requires: "ev_wine_inventory",
+          critical: true
+        },
+        {
+          q: "당신 아내는 어젯밤 영화 본 적 없다고 하던데요",
+          a: "[침묵] ...뭐라고요? ...아내가 그렇게 말했어요? ...아니, 뭔가 착각한 것 같은데.",
+          delta: 20,
+          requires: "ev_wife_testimony"
+        },
+        {
+          q: "정민호 사장과 부인 김유진 씨, 둘 사이 알고 계셨죠?",
+          a: "[떨림] [한숨] ...언제부터 알았어요? 나는... 나는 그냥 얘기를 하고 싶었을 뿐이에요. 정민호 그 새끼가, [침묵] 그 새끼가 아내한테 손을 댔다고요.",
+          delta: 30,
+          requires: "ev_text_message",
+          critical: true
+        }
+      ]
+    },
+    {
+      id: "kim_yujin",
+      name: "김유진",
+      role: "박준영의 아내 · 정민호와 6개월 비밀 연애",
+      anxietyStart: 60,
+      anxietyBreak: 90,
+      questions: [
+        {
+          q: "정민호 씨와 어떤 사이였나요?",
+          a: "[침묵] ...6개월 됐어요. 아무도 모르게. 그 사람이 일본으로 떠나기 전에 정리하기로 했었어요.",
+          delta: 0,
+          requires: null,
+          revealsId: "ev_text_message_confirm"
+        },
+        {
+          q: "어젯밤 남편이 들어온 시간을 기억하세요?",
+          a: "11시쯤 잠들었는데, 차 시동 소리에 한 번 깼어요. 시계 보니 0시 30분이었어요.",
+          delta: 0,
+          requires: null
+        },
+        {
+          q: "남편이 어젯밤 같이 영화 봤다는데 사실인가요?",
+          a: "...아니요. 영화 같이 본 적 없어요. 어젯밤만이 아니라, 요즘은 그런 일이 거의 없어요.",
+          delta: 0,
+          requires: null,
+          revealsId: "ev_wife_testimony"
+        }
+      ]
+    },
+    {
+      id: "lee_minji",
+      name: "이민지",
+      role: "와인바 직원 · 사건 당일 21시 30분 퇴근",
+      anxietyStart: 30,
+      anxietyBreak: 95,
+      questions: [
+        {
+          q: "사장님과 박준영 씨 관계는 어땠어요?",
+          a: "음... 친한 친구셨는데, 최근엔 좀 다투시는 분위기였어요. 박준영 씨가 자주 오셨고요.",
+          delta: 5,
+          requires: null
+        },
+        {
+          q: "샤또 마고 2015 와인은 가게에 있었나요?",
+          a: "어, 그날 21시쯤 최동수 단골 손님이 마지막 한 병 사 가셨어요. 사장님이 직접 '이게 마지막'이라고 하셨어요.",
+          delta: 0,
+          requires: null,
+          revealsId: "ev_wine_inventory_oral"
+        }
+      ]
+    },
+    {
+      id: "choi_dongsoo",
+      name: "최동수",
+      role: "단골 손님 · 21시 와인 마지막 한 병 구매",
+      anxietyStart: 10,
+      anxietyBreak: 100,
+      questions: [
+        {
+          q: "그날 무슨 와인 사 가셨어요?",
+          a: "샤또 마고 2015. [웃음] 정 사장이 '이게 마지막 한 병이에요'라고 직접 건네줬는데, 다음 주에 입고된다고. 그게 마지막이 될 줄은 몰랐죠.",
+          delta: 0,
+          requires: null
+        }
+      ]
+    }
+  ]
+};
+
+// ============ 게임 상태 ============
+let state = {
+  stage: 0, // 0=브리핑, 1=조사, 2=심문, 3=추리
+  discovered: new Set(),
+  asked: {}, // npcId -> [question_idx]
+  npcAnxiety: {},
+  ended: null
+};
+
+CASE.npcs.forEach(n => state.npcAnxiety[n.id] = n.anxietyStart);
+
+// ============ 음성 (Web Speech API) ============
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text.replace(/\[.*?\]/g, ''));
+  utter.lang = 'ko-KR';
+  utter.rate = 1.0;
+  utter.pitch = 1.0;
+  // 한국어 여성 보이스 우선
+  const voices = speechSynthesis.getVoices();
+  const koVoice = voices.find(v => v.lang.startsWith('ko') && /female|yuna|seoyeon/i.test(v.name)) ||
+                  voices.find(v => v.lang.startsWith('ko'));
+  if (koVoice) utter.voice = koVoice;
+  speechSynthesis.speak(utter);
+}
+
+// ============ 렌더링 ============
+function ariaSay(text) {
+  return `<div class="aria-box">
+    <div class="label">ARIA</div>
+    <div class="text">${text.replace(/\n/g, '<br/>')}</div>
+    <button class="speak" onclick="speak(${JSON.stringify(text).replace(/"/g, '&quot;')})">🔊 들어보기</button>
+  </div>`;
+}
+
+function updateProgress() {
+  const dots = document.querySelectorAll('#progress .dot');
+  dots.forEach((d, i) => {
+    d.classList.remove('active', 'done');
+    if (i < state.stage) d.classList.add('done');
+    if (i === state.stage) d.classList.add('active');
+  });
+  const titles = ['단계 1 · 사건 브리핑', '단계 2 · 현장 조사', '단계 3 · 심문', '단계 4 · 추리·고발'];
+  document.getElementById('stage-title').textContent = titles[state.stage] || '결말';
+}
+
+function render() {
+  updateProgress();
+  const app = document.getElementById('app');
+  if (state.ended) return renderEnding(app);
+  if (state.stage === 0) return renderBriefing(app);
+  if (state.stage === 1) return renderInvestigation(app);
+  if (state.stage === 2) return renderInterrogation(app);
+  if (state.stage === 3) return renderDeduction(app);
+}
+
+function renderBriefing(app) {
+  app.innerHTML = `
+    ${ariaSay(CASE.premise)}
+    <div class="hint">실제 게임에선 여기서 '시작할게'라고 음성으로 말하면 진행돼요.</div>
+    <button class="action" style="margin-top:12px;width:100%;text-align:center;background:var(--accent);color:#0a0c10;font-weight:600;border:0" onclick="state.stage=1;render()">사건 시작 →</button>
+  `;
+}
+
+function renderInvestigation(app) {
+  let html = ariaSay("어디서부터 살펴볼까요? 장소를 골라주세요.");
+  CASE.scenes.forEach(s => {
+    if (s.objects.length === 0) return; // NPC 인터뷰 전용 장소
+    html += `<div class="panel"><h2>${s.name}</h2><p style="color:var(--text-soft);font-size:14px;margin:0 0 10px">${s.desc}</p><div class="grid">`;
+    s.objects.forEach((o, idx) => {
+      const found = state.discovered.has(o.revealsId);
+      html += `<button class="action ${found ? 'found' : ''}" onclick="examine('${s.id}', ${idx})">${found ? '✓ ' : ''}${o.name}</button>`;
+    });
+    html += '</div></div>';
+  });
+  html += `<div class="panel"><h2>진행</h2>
+    <div class="meta">발견된 단서: ${state.discovered.size}개 / 10개</div>
+    <button class="action" onclick="showNotes()" style="margin-top:10px">📓 사건 노트 열기</button>
+    <button class="action" onclick="state.stage=2;render()" style="margin-top:6px;background:var(--accent-soft);border-color:var(--accent);color:var(--accent)">심문 단계로 →</button>
+    <div class="hint">단서 4~5개 모은 후 심문하면 NPC의 거짓말을 깰 수 있어요.</div>
+  </div>`;
+  app.innerHTML = html;
+}
+
+function examine(sceneId, idx) {
+  const scene = CASE.scenes.find(s => s.id === sceneId);
+  const obj = scene.objects[idx];
+  if (!state.discovered.has(obj.revealsId)) {
+    state.discovered.add(obj.revealsId);
+  }
+  // 모달 대신 패널 위에 Aria 응답 추가
+  const app = document.getElementById('app');
+  app.scrollTop = 0;
+  app.innerHTML = ariaSay(obj.desc) +
+    `<button class="action" style="width:100%;text-align:center;margin-top:10px" onclick="render()">계속 조사하기</button>`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showNotes() {
+  const app = document.getElementById('app');
+  let html = `<div class="panel notes"><h2>📓 사건 노트</h2>`;
+  if (state.discovered.size === 0) {
+    html += `<p style="color:var(--text-dim)">(아직 발견된 단서 없음)</p>`;
+  } else {
+    html += `<ul>`;
+    const allEv = {
+      "ev_broken_bottle": "깨진 와인병 (샤또 마고 라벨, 정 사장의 혈흔) — 범행 도구.",
+      "ev_receipt_2342": "23시 42분 박준영 카드 결제 영수증 (샤또 마고 한 병).",
+      "ev_text_message": "정민호와 김유진의 6개월 비밀 연애 메시지.",
+      "ev_wine_inventory": "재고 장부 — 샤또 마고는 21시에 마지막 한 병이 팔려 사건 당시 0병.",
+      "ev_cctv_outside": "편의점 CCTV — 박준영이 22:10 입장, 0:15에 혼자 나옴 (폐점 후 45분 체류).",
+      "ev_autopsy": "부검 — 사망 시각 23:30~23:45, 흉기는 두꺼운 유리.",
+      "ev_wine_inventory_oral": "직원 이민지 증언 — 21시에 최동수 손님이 마지막 한 병 구매.",
+      "ev_wife_testimony": "김유진 증언 — 어젯밤 영화 본 적 없음, 남편 귀가 시각은 0:30.",
+      "ev_text_message_confirm": "김유진 본인 확인 — 정민호와 6개월 비밀 연애."
+    };
+    state.discovered.forEach(id => {
+      if (allEv[id]) html += `<li>${allEv[id]}</li>`;
+    });
+    html += `</ul>`;
+  }
+  html += `<button class="action" onclick="render()" style="margin-top:10px">← 닫기</button></div>`;
+  app.innerHTML = html;
+}
+
+function renderInterrogation(app) {
+  let html = ariaSay("누구를 만나보시겠어요? 단서를 들이밀면 거짓말이 무너질 수 있어요.");
+  CASE.npcs.forEach(n => {
+    const anxiety = state.npcAnxiety[n.id];
+    const ended = anxiety >= n.anxietyBreak;
+    const broken = anxiety >= n.anxietyBreak * 0.95;
+    let mood = '평온';
+    let moodClass = '';
+    if (anxiety >= 70) { mood = '무너지기 직전'; moodClass = 'high'; }
+    else if (anxiety >= 50) { mood = '불안'; moodClass = 'mid'; }
+    else if (anxiety >= 30) { mood = '경계'; moodClass = 'mid'; }
+    html += `<div class="panel">
+      <h2>${n.name} <span class="badge">${n.role.split(' · ')[0]}</span></h2>
+      <p style="color:var(--text-dim);font-size:13px;margin:0 0 8px">${n.role}</p>
+      <div class="anxiety ${moodClass}">불안 ${anxiety}/100 — ${mood}</div>
+      <div class="grid" style="margin-top:10px">
+        ${n.questions.map((q, idx) => {
+          const asked = (state.asked[n.id] || []).includes(idx);
+          const locked = q.requires && !state.discovered.has(q.requires);
+          return `<button class="action ${asked ? 'found' : ''}" ${locked ? 'disabled' : ''} onclick="ask('${n.id}', ${idx})">
+            ${asked ? '✓ ' : ''}${q.q}
+            ${locked ? `<div class="meta">(이 질문은 단서 발견 후 가능)</div>` : ''}
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+  html += `<div class="panel"><h2>진행</h2>
+    <button class="action" onclick="showNotes()">📓 사건 노트 열기</button>
+    <button class="action" onclick="state.stage=1;render()" style="margin-top:6px">← 현장으로 돌아가기</button>
+    <button class="action" onclick="state.stage=3;render()" style="margin-top:6px;background:var(--accent);color:#0a0c10;border:0;font-weight:600">추리 단계로 →</button>
+  </div>`;
+  app.innerHTML = html;
+}
+
+function ask(npcId, idx) {
+  const npc = CASE.npcs.find(n => n.id === npcId);
+  const q = npc.questions[idx];
+  state.asked[npcId] = state.asked[npcId] || [];
+  if (!state.asked[npcId].includes(idx)) state.asked[npcId].push(idx);
+  state.npcAnxiety[npcId] = Math.min(100, state.npcAnxiety[npcId] + (q.delta || 0));
+  if (q.revealsId) state.discovered.add(q.revealsId);
+
+  const app = document.getElementById('app');
+  let html = `<div class="panel">
+    <div class="meta">[${npc.name}에게]</div>
+    <div style="font-size:15px;color:var(--text);margin:6px 0 12px">"${q.q}"</div>
+    <div class="npc-line"><span class="npc-name">${npc.name}</span><span class="anxiety ${state.npcAnxiety[npcId] >= 70 ? 'high' : state.npcAnxiety[npcId] >= 40 ? 'mid' : ''}">불안 ${state.npcAnxiety[npcId]}/100</span><br/><br/>${q.a}</div>
+    ${q.critical ? `<div class="hint" style="color:var(--good)">💡 거짓말이 흔들리고 있어요. 다른 단서로도 압박해보세요.</div>` : ''}
+    <button class="action" onclick="render()" style="margin-top:10px;width:100%;text-align:center">← 계속</button>
+    <button class="speak" onclick="speak(${JSON.stringify(q.a).replace(/"/g, '&quot;')})" style="margin-top:6px">🔊 답변 들어보기</button>
+  </div>`;
+  app.innerHTML = html;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderDeduction(app) {
+  app.innerHTML = `
+    ${ariaSay("자, 이제 추리해볼 시간이에요. 누가, 왜, 그리고 그걸 뒷받침하는 핵심 증거가 무엇인지 골라주세요.")}
+    <div class="panel">
+      <h2>고발</h2>
+      <label>범인은 누구인가요?</label>
+      <select id="d-culprit">
+        <option value="">선택...</option>
+        <option value="park_junyoung">박준영 (절친)</option>
+        <option value="kim_yujin">김유진 (피해자의 연인)</option>
+        <option value="lee_minji">이민지 (직원)</option>
+        <option value="choi_dongsoo">최동수 (단골)</option>
+      </select>
+      <label>핵심 동기는?</label>
+      <select id="d-motive">
+        <option value="">선택...</option>
+        <option value="affair_debt">아내와의 관계 + 빚 (정확)</option>
+        <option value="debt_only">단순 빚 변제 갈등 (부분 정답)</option>
+        <option value="affair_revenge">치정 (부분 정답)</option>
+        <option value="other">기타 (틀림)</option>
+      </select>
+      <label>제시하는 핵심 증거 (3가지를 합쳐 말해주세요)</label>
+      <select id="d-ev1"><option value="">증거 1...</option>
+        <option value="ev_receipt_2342">23:42 결제 영수증</option>
+        <option value="ev_wine_inventory">와인 재고 장부</option>
+        <option value="ev_text_message">정민호-김유진 메시지</option>
+        <option value="ev_wife_testimony">김유진 증언</option>
+        <option value="ev_cctv_outside">편의점 CCTV</option>
+      </select>
+      <select id="d-ev2"><option value="">증거 2...</option>
+        <option value="ev_receipt_2342">23:42 결제 영수증</option>
+        <option value="ev_wine_inventory">와인 재고 장부</option>
+        <option value="ev_text_message">정민호-김유진 메시지</option>
+        <option value="ev_wife_testimony">김유진 증언</option>
+        <option value="ev_cctv_outside">편의점 CCTV</option>
+      </select>
+      <select id="d-ev3"><option value="">증거 3...</option>
+        <option value="ev_receipt_2342">23:42 결제 영수증</option>
+        <option value="ev_wine_inventory">와인 재고 장부</option>
+        <option value="ev_text_message">정민호-김유진 메시지</option>
+        <option value="ev_wife_testimony">김유진 증언</option>
+        <option value="ev_cctv_outside">편의점 CCTV</option>
+      </select>
+      <button class="submit-deduction" onclick="submitDeduction()">고발한다</button>
+    </div>
+  `;
+}
+
+function submitDeduction() {
+  const culprit = document.getElementById('d-culprit').value;
+  const motive = document.getElementById('d-motive').value;
+  const evs = [
+    document.getElementById('d-ev1').value,
+    document.getElementById('d-ev2').value,
+    document.getElementById('d-ev3').value
+  ].filter(Boolean);
+
+  let result;
+  if (!culprit) {
+    result = { type: 'inconclusive' };
+  } else if (culprit !== 'park_junyoung') {
+    result = { type: 'wrong_suspect' };
+  } else {
+    const keyEvSet = new Set(['ev_receipt_2342','ev_wine_inventory','ev_text_message','ev_wife_testimony']);
+    const matched = evs.filter(e => keyEvSet.has(e)).length;
+    if (motive === 'affair_debt' && matched >= 3) {
+      result = { type: 'perfect' };
+    } else if (motive === 'other') {
+      result = { type: 'wrong_suspect' };
+    } else {
+      result = { type: 'conviction' };
+    }
+  }
+  state.ended = result;
+  render();
+}
+
+function renderEnding(app) {
+  const map = {
+    perfect: {
+      cls: '',
+      title: '🎯 Perfect',
+      text: "법정에서 박준영은 결국 모든 것을 인정했어요. '그날 밤, 정민호가 마지막으로 권한 와인을 들고 나가는 척하고 싶었어요. 그 친구가 너무 미웠지만, 죽일 생각은 없었어요.' 사건은 종결됐고, 의뢰인은 짧은 편지를 남겼어요. '동생이 마지막에 만난 사람이 누군지 알게 해줘서 고마워요.' 명성 +50."
+    },
+    conviction: {
+      cls: 'mid',
+      title: '⚖️ Conviction',
+      text: "박준영은 기소됐지만, 변호사의 반박으로 동기 입증이 약했어요. 살인보다 가벼운 과실치사로 감형됐고, 사건은 종결됐지만 어딘가 미진해요. 명성 +25."
+    },
+    wrong_suspect: {
+      cls: 'bad',
+      title: '❌ Wrong Suspect',
+      text: "당신의 추리는 법정에서 무너졌어요. 진범은 자유로워졌고, 의뢰인은 당신을 다시 찾지 않을 거예요. 그러나 사건 노트는 그대로 남아 있어요 — 다시 시작할 수 있어요."
+    },
+    inconclusive: {
+      cls: 'bad',
+      title: '🌫️ Inconclusive',
+      text: "사건은 미해결로 분류됐어요. 콜드케이스 폴더에 들어갔고, 누군가 다시 열어보기 전까진 거기 남아 있을 거예요. 단서 발견 수만큼 부분 명성. +" + (state.discovered.size * 1) + "."
+    }
+  };
+  const r = map[state.ended.type];
+  app.innerHTML = `
+    <div class="ending ${r.cls}">
+      <h3>${r.title}</h3>
+      <p>${r.text}</p>
+      <button class="restart" onclick="restart()">다시 시작</button>
+    </div>
+    <div class="legend" style="margin-top:24px">
+      <strong>지금 본 흐름이 게임의 한 사이클이에요.</strong> 실제 게임에선 — (1) 화면을 안 보고 음성으로만, (2) AI가 매번 새로운 사건을 만들고, (3) 자유로운 음성 질문이 가능해요. 이 데모는 '한 사건의 구조와 길이'를 눈으로 보기 위한 도우미예요.
+    </div>
+  `;
+}
+
+function restart() {
+  state = {
+    stage: 0,
+    discovered: new Set(),
+    asked: {},
+    npcAnxiety: {},
+    ended: null
+  };
+  CASE.npcs.forEach(n => state.npcAnxiety[n.id] = n.anxietyStart);
+  render();
+}
+
+// 음성 voices를 미리 로드
+if (window.speechSynthesis) {
+  speechSynthesis.onvoiceschanged = () => {};
+}
+
+render();
+</script>
+</body>
+</html>

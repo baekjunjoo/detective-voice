@@ -1,0 +1,290 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Detective Voice — Case Template",
+  "description": "사건의 단일 진실 소스(Single Source of Truth). LLM은 이 템플릿을 참조해서만 사실을 발화할 수 있다. 새로운 사실 생성은 금지.",
+  "type": "object",
+  "required": [
+    "case_id",
+    "title",
+    "premise",
+    "ground_truth",
+    "timeline",
+    "characters",
+    "evidence",
+    "scenes",
+    "deduction"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "사건 고유 ID (slug)"
+    },
+    "title": {
+      "type": "string",
+      "description": "사건 제목 (예: '마지막 손님')"
+    },
+    "premise": {
+      "type": "string",
+      "description": "Aria가 첫 브리핑에서 사용할 사건 개요 (3~5문장)"
+    },
+    "tone": {
+      "type": "string",
+      "enum": ["seoul_noir", "tokyo_mystery", "us_noir", "uk_cozy"],
+      "description": "사운드/음악/대사 톤 가이드"
+    },
+    "estimated_minutes": {
+      "type": "object",
+      "properties": {
+        "min": { "type": "integer" },
+        "max": { "type": "integer" }
+      }
+    },
+    "ground_truth": {
+      "type": "object",
+      "description": "사건의 진짜 답. 추리 평가 시 비교 기준.",
+      "required": ["culprit", "motive", "method", "key_evidence"],
+      "properties": {
+        "culprit": {
+          "type": "string",
+          "description": "범인의 character_id"
+        },
+        "motive": {
+          "type": "string",
+          "description": "핵심 동기 (1문장)"
+        },
+        "method": {
+          "type": "string",
+          "description": "범행 방식 (1~2문장)"
+        },
+        "key_evidence": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "유죄 입증의 핵심이 되는 evidence_id 목록"
+        },
+        "smoking_gun": {
+          "type": "string",
+          "description": "결정적 증거를 묶는 한 줄 트릭 (예: '와인 종류와 결제 시간의 모순')"
+        }
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "description": "객관적 타임라인. NPC 증언과 비교해 모순 탐지에 사용.",
+      "items": {
+        "type": "object",
+        "required": ["time", "event", "verifiable"],
+        "properties": {
+          "time": { "type": "string", "description": "예: '23:40'" },
+          "event": { "type": "string" },
+          "verifiable": {
+            "type": "boolean",
+            "description": "증거로 입증 가능한 사실인지 (true) 아니면 증언 기반인지 (false)"
+          },
+          "source": {
+            "type": "string",
+            "description": "이 사실의 출처(증거 ID 또는 NPC ID)"
+          }
+        }
+      }
+    },
+    "characters": {
+      "type": "array",
+      "description": "사건의 모든 NPC. 피해자, 용의자, 증인 포함.",
+      "items": {
+        "type": "object",
+        "required": [
+          "character_id",
+          "name",
+          "role",
+          "background",
+          "relationship_to_victim",
+          "alibi",
+          "truth",
+          "lies",
+          "emotional_state",
+          "voice_profile"
+        ],
+        "properties": {
+          "character_id": { "type": "string" },
+          "name": { "type": "string" },
+          "role": {
+            "type": "string",
+            "enum": ["victim", "suspect", "witness", "accomplice"]
+          },
+          "background": {
+            "type": "string",
+            "description": "직업, 나이, 성격 (3~5문장)"
+          },
+          "relationship_to_victim": {
+            "type": "string",
+            "description": "피해자와의 관계 + 갈등의 씨앗"
+          },
+          "alibi": {
+            "type": "object",
+            "properties": {
+              "claimed": { "type": "string", "description": "본인이 주장하는 알리바이" },
+              "actual": { "type": "string", "description": "진짜 행적" },
+              "is_lying": { "type": "boolean" }
+            }
+          },
+          "motive_to_kill": {
+            "type": "string",
+            "description": "있을 경우, 죽일 만한 동기"
+          },
+          "truth": {
+            "type": "array",
+            "description": "캐릭터가 알고 있고 솔직하게 말할 수 있는 사실들",
+            "items": { "type": "string" }
+          },
+          "lies": {
+            "type": "array",
+            "description": "캐릭터가 의도적으로 거짓말하는 영역. 같은 영역 질문은 항상 같은 거짓말로 응답.",
+            "items": {
+              "type": "object",
+              "required": ["topic", "lie", "truth_behind", "breaks_at"],
+              "properties": {
+                "topic": { "type": "string", "description": "어떤 주제에 대한 거짓말인지" },
+                "lie": { "type": "string", "description": "공식 답변" },
+                "truth_behind": { "type": "string", "description": "실제 진실" },
+                "breaks_at": {
+                  "type": "string",
+                  "description": "어떤 증거를 들이밀면 무너지는가 (evidence_id)"
+                }
+              }
+            }
+          },
+          "emotional_state": {
+            "type": "object",
+            "description": "심문 시작 시점의 초기 감정 + 압박에 따른 변화 곡선",
+            "properties": {
+              "initial": {
+                "type": "string",
+                "enum": ["calm", "nervous", "defensive", "grief", "angry"]
+              },
+              "anxiety_meter_start": { "type": "integer", "minimum": 0, "maximum": 100 },
+              "breaks_at": { "type": "integer", "minimum": 0, "maximum": 100, "description": "이 값을 넘으면 변호사 호출 또는 자백" }
+            }
+          },
+          "voice_profile": {
+            "type": "object",
+            "description": "TTS 캐스팅용",
+            "properties": {
+              "ko_voice": { "type": "string" },
+              "en_voice": { "type": "string" },
+              "speech_quirks": { "type": "string", "description": "말버릇, 망설임, 사투리 등" }
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "사건의 모든 단서. 발견되면 사건 노트에 추가.",
+      "items": {
+        "type": "object",
+        "required": ["evidence_id", "category", "name", "description", "discoverable_at", "implication"],
+        "properties": {
+          "evidence_id": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": ["physical", "testimony", "document", "relationship"]
+          },
+          "name": { "type": "string", "description": "예: '깨진 와인잔'" },
+          "description": {
+            "type": "string",
+            "description": "Aria가 단서를 묘사하는 방식 (2~3문장)"
+          },
+          "discoverable_at": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "어떤 scene_id에서 발견 가능한가"
+          },
+          "discovery_hints": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "발견을 유도하는 사용자 명령 예시 (예: '책상 서랍 열어봐')"
+          },
+          "implication": {
+            "type": "string",
+            "description": "이 단서가 시사하는 바 (1~2문장)"
+          },
+          "contradicts": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "어떤 character_id의 어떤 거짓말과 모순되는가"
+          }
+        }
+      }
+    },
+    "scenes": {
+      "type": "array",
+      "description": "조사 가능한 장소들",
+      "items": {
+        "type": "object",
+        "required": ["scene_id", "name", "description", "ambient_sound"],
+        "properties": {
+          "scene_id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string", "description": "Aria의 장소 묘사 (3~5문장)" },
+          "ambient_sound": { "type": "string", "description": "공간음 디렉션" },
+          "objects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "interactive": { "type": "boolean" },
+                "reveals_evidence": { "type": "string", "description": "evidence_id" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "deduction": {
+      "type": "object",
+      "description": "추리 단계 평가 기준",
+      "properties": {
+        "minimum_evidence_required": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Perfect 결말에 도달하려면 발견되어 있어야 하는 evidence_id"
+        },
+        "endings": {
+          "type": "object",
+          "properties": {
+            "perfect": {
+              "type": "object",
+              "properties": {
+                "criteria": { "type": "string" },
+                "narration": { "type": "string" }
+              }
+            },
+            "conviction": {
+              "type": "object",
+              "properties": {
+                "criteria": { "type": "string" },
+                "narration": { "type": "string" }
+              }
+            },
+            "wrong_suspect": {
+              "type": "object",
+              "properties": {
+                "criteria": { "type": "string" },
+                "narration": { "type": "string" }
+              }
+            },
+            "inconclusive": {
+              "type": "object",
+              "properties": {
+                "criteria": { "type": "string" },
+                "narration": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
