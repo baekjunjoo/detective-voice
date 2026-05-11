@@ -1,0 +1,1850 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Detective Voice — 마지막 손님</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root {
+    --bg: #000;
+    --fg: #f4f1e8;
+    --fg-soft: #c9c3b3;
+    --fg-dim: #7a7568;
+    --fg-faint: #4a463c;
+    --accent: #f4b54a;
+    --accent-dim: #a87f30;
+    --warn: #e87d4f;
+    --good: #9fc270;
+    --line: #2a2a2a;
+    --line-soft: #181818;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *::selection { background: var(--accent); color: var(--bg); }
+
+  html, body {
+    height: 100%;
+    background: #000;
+    color: var(--fg);
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.012) 2px, rgba(255,255,255,0.012) 3px),
+      #050505;
+    min-height: 100vh;
+  }
+
+  /* 픽셀 아트 SVG는 유지 — pixelated rendering */
+  .pix-art, .npc-card .portrait, .splash-art {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+
+  /* ============ 외부 헤더 ============ */
+  .lab-header {
+    width: 100%;
+    max-width: 920px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding: 0 12px;
+    color: var(--fg-dim);
+    font-size: 13px;
+  }
+  .lab-header .brand {
+    color: var(--accent);
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    font-size: 13px;
+  }
+  .lab-header .brand-sub {
+    font-size: 11px;
+    color: var(--fg-faint);
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+    font-weight: 400;
+  }
+  .lab-header .controls { display: flex; gap: 6px; }
+  .lab-btn {
+    background: var(--bg);
+    border: 1px solid var(--fg-faint);
+    color: var(--fg-dim);
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+  .lab-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .lab-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* ============ iPhone 프레임 ============ */
+  .iphone {
+    width: 390px;
+    height: 844px;
+    background: #000;
+    border: 8px solid #14130f;
+    border-radius: 50px;
+    box-shadow:
+      0 0 0 2px #2a2820,
+      0 30px 60px rgba(0,0,0,0.8),
+      inset 0 0 0 1px #000;
+    position: relative;
+    overflow: hidden;
+  }
+  .iphone .island {
+    position: absolute;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    width: 110px; height: 32px;
+    background: #000;
+    border-radius: 16px;
+    z-index: 100;
+  }
+  .iphone .home-indicator {
+    position: absolute;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 130px; height: 4px;
+    background: var(--fg);
+    z-index: 100;
+    opacity: 0.7;
+    border-radius: 2px;
+  }
+  .iphone .screen {
+    position: absolute;
+    inset: 0;
+    border-radius: 42px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .iphone .status-bar {
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 30px 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg);
+    z-index: 50;
+    position: relative;
+  }
+  .iphone .status-bar .right { display: flex; gap: 5px; align-items: center; }
+  .iphone .status-bar svg { width: 14px; height: 12px; fill: var(--fg); }
+  .iphone .app-shell {
+    position: absolute;
+    top: 50px; left: 0; right: 0; bottom: 26px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 14px 28px;
+  }
+  .iphone .app-shell::-webkit-scrollbar { width: 0; }
+
+  /* CRT 효과 — 살짝만 */
+  .iphone .screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.10) 3px, rgba(0,0,0,0.10) 4px);
+    pointer-events: none;
+    z-index: 90;
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 0; }
+    .lab-header { display: none; }
+    .iphone { width: 100vw; height: 100vh; border: 0; border-radius: 0; box-shadow: none; }
+    .iphone .screen { border-radius: 0; }
+    .iphone .island { display: none; }
+    .iphone .home-indicator { display: none; }
+    .iphone .app-shell { top: 44px; bottom: 0; padding-bottom: env(safe-area-inset-bottom, 16px); }
+  }
+
+  /* ============ 컴포넌트 ============ */
+  .pix-tag {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    padding: 3px 9px;
+    margin-bottom: 10px;
+    background: var(--bg);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .pix-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+  .pix-sub {
+    font-size: 12px;
+    color: var(--fg-dim);
+    margin-bottom: 14px;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  .pix-box {
+    background: var(--bg);
+    border: 1px solid var(--fg-faint);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  /* 진행바 */
+  .progress {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3px;
+    margin-bottom: 16px;
+  }
+  .progress .seg { height: 6px; background: var(--line); }
+  .progress .seg.active { background: var(--accent); }
+  .progress .seg.done { background: var(--accent-dim); }
+
+  /* Aria 음성 박스 */
+  .aria-bubble {
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    position: relative;
+    animation: fadein 0.3s ease-out;
+  }
+  .aria-bubble::before, .aria-bubble::after {
+    content: "";
+    position: absolute;
+    width: 8px; height: 8px;
+    background: var(--accent);
+  }
+  .aria-bubble::before { top: -1px; left: -1px; }
+  .aria-bubble::after { bottom: -1px; right: -1px; }
+
+  .aria-bubble .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .aria-bubble .label .pulse {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 1s ease-in-out infinite;
+  }
+  .aria-bubble .text {
+    font-size: 14px;
+    color: var(--fg);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    font-weight: 400;
+  }
+  .aria-bubble .speak-btn {
+    margin-top: 10px;
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 5px 11px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+  .aria-bubble .speak-btn:hover { background: var(--accent); color: var(--bg); }
+
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  /* 사운드 웨이브 */
+  .speaking-bars {
+    display: inline-flex;
+    gap: 2px;
+    align-items: end;
+    height: 10px;
+  }
+  .speaking-bars span {
+    width: 2px;
+    background: var(--accent);
+    animation: bar 0.4s ease-in-out infinite;
+  }
+  .speaking-bars span:nth-child(1) { animation-delay: 0s; height: 30%; }
+  .speaking-bars span:nth-child(2) { animation-delay: 0.1s; height: 80%; }
+  .speaking-bars span:nth-child(3) { animation-delay: 0.2s; height: 50%; }
+  .speaking-bars span:nth-child(4) { animation-delay: 0.3s; height: 100%; }
+  .speaking-bars span:nth-child(5) { animation-delay: 0.15s; height: 60%; }
+  @keyframes bar {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+  }
+
+  /* 픽셀 아트 컨테이너 */
+  .pix-art {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #000;
+    border: 1px solid var(--fg-faint);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .pix-art svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    shape-rendering: crispEdges;
+  }
+  .pix-art-evidence {
+    aspect-ratio: 5/3;
+    border: 1px solid var(--accent-dim);
+  }
+
+  /* 카드 */
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--fg-faint);
+    padding: 11px 13px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    position: relative;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card:hover .card-title { color: var(--accent); }
+  .card.found { border-color: var(--good); }
+  .card.found::before {
+    content: "✓";
+    position: absolute;
+    top: 8px; right: 12px;
+    color: var(--good);
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .card.locked { opacity: 0.4; cursor: not-allowed; }
+  .card-title {
+    font-size: 14px;
+    color: var(--fg);
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+  .card-sub {
+    font-size: 12px;
+    color: var(--fg-dim);
+    line-height: 1.5;
+  }
+
+  .scene-block { margin-top: 14px; }
+  .scene-block-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--fg-dim);
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  /* NPC 카드 */
+  .npc-card {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    padding: 0;
+    overflow: hidden;
+  }
+  .npc-card .portrait {
+    width: 64px;
+    flex-shrink: 0;
+    background: #000;
+    border-right: 1px solid var(--fg-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .npc-card .portrait svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    shape-rendering: crispEdges;
+  }
+  .npc-card .info {
+    flex: 1;
+    padding: 9px 12px;
+  }
+  .npc-card .info .name {
+    font-size: 14px;
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .npc-card .info .name .age {
+    font-size: 11px;
+    color: var(--fg-faint);
+    margin-left: 6px;
+    font-weight: 400;
+  }
+  .npc-card .info .role {
+    font-size: 12px;
+    color: var(--fg-dim);
+    margin-top: 2px;
+  }
+  .npc-card .anxiety {
+    margin-top: 6px;
+    height: 4px;
+    background: var(--line);
+    position: relative;
+  }
+  .npc-card .anxiety .fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.5s ease-out;
+  }
+
+  /* 단서 발견 배너 */
+  .clue-banner {
+    background: var(--bg);
+    border: 1px solid var(--good);
+    padding: 9px 12px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--good);
+    text-align: center;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+  }
+  .clue-banner::before { content: "▸ "; opacity: 0.7; }
+
+  /* NPC 라인 */
+  .npc-line {
+    background: var(--bg);
+    border-left: 3px solid var(--accent);
+    padding: 11px 14px;
+    margin: 8px 0;
+    font-size: 14px;
+    color: var(--fg-soft);
+    white-space: pre-wrap;
+    line-height: 1.7;
+  }
+  .npc-line .who {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  /* 질문 버튼 */
+  .question-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .q-btn {
+    background: var(--bg);
+    border: 1px solid var(--fg-faint);
+    color: var(--fg-soft);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .q-btn:hover { border-color: var(--accent); color: var(--fg); }
+  .q-btn.asked { opacity: 0.4; }
+  .q-btn.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-style: dashed;
+  }
+  .q-btn .lock-note {
+    font-size: 11px;
+    color: var(--fg-faint);
+    display: block;
+    margin-top: 3px;
+  }
+
+  /* 자유 입력 */
+  .free-input {
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    padding: 12px;
+    margin-top: 12px;
+    position: relative;
+  }
+  .free-input::before, .free-input::after {
+    content: "";
+    position: absolute;
+    width: 8px; height: 8px;
+    background: var(--accent);
+  }
+  .free-input::before { top: -1px; left: -1px; }
+  .free-input::after { bottom: -1px; right: -1px; }
+  .free-input .label {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .free-input textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--fg-faint);
+    color: var(--fg);
+    padding: 9px 11px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: none;
+    min-height: 60px;
+    border-radius: 0;
+    line-height: 1.6;
+  }
+  .free-input textarea:focus { outline: none; border-color: var(--accent); }
+  .free-input button {
+    width: 100%;
+    margin-top: 8px;
+    background: var(--accent);
+    color: var(--bg);
+    border: 0;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    font-weight: 700;
+  }
+  .free-input button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Notes */
+  .notebook {
+    background: var(--bg);
+    border: 1px solid var(--fg-faint);
+    padding: 16px;
+    margin-bottom: 12px;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 25px, rgba(244,181,74,0.06) 25px, rgba(244,181,74,0.06) 26px);
+  }
+  .notebook .nb-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--fg-faint);
+    padding-bottom: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .notebook ul { list-style: none; }
+  .notebook li {
+    padding: 9px 0;
+    font-size: 13px;
+    color: var(--fg-soft);
+    line-height: 1.6;
+    border-bottom: 1px dashed var(--fg-faint);
+  }
+  .notebook li:last-child { border-bottom: 0; }
+  .notebook li::before {
+    content: "▸";
+    color: var(--accent);
+    margin-right: 8px;
+  }
+  .notebook .empty {
+    color: var(--fg-dim);
+    font-size: 13px;
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  /* 큰 액션 버튼 */
+  .primary-btn {
+    width: 100%;
+    background: var(--accent);
+    color: var(--bg);
+    border: 0;
+    padding: 13px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    margin-top: 12px;
+    position: relative;
+    font-weight: 700;
+  }
+  .primary-btn::before, .primary-btn::after {
+    content: "";
+    position: absolute;
+    width: 4px; height: 4px;
+    background: var(--bg);
+  }
+  .primary-btn::before { top: 0; left: 0; }
+  .primary-btn::after { bottom: 0; right: 0; }
+  .primary-btn:hover { background: var(--fg); }
+
+  .ghost-btn {
+    width: 100%;
+    background: transparent;
+    color: var(--fg-soft);
+    border: 1px solid var(--fg-faint);
+    padding: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+  .ghost-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Deduction */
+  .deduction-form label {
+    display: block;
+    font-size: 11px;
+    color: var(--fg-dim);
+    margin-top: 14px;
+    margin-bottom: 5px;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .deduction-form select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--fg-faint);
+    color: var(--fg);
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='6'><polygon points='0,0 8,0 4,6' fill='%23f4b54a'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .deduction-form select:focus { outline: none; border-color: var(--accent); }
+
+  /* Ending */
+  .ending {
+    text-align: center;
+    padding: 24px 18px;
+    margin-top: 8px;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+    position: relative;
+    animation: fadein 0.5s ease-out;
+  }
+  .ending.bad { border-color: var(--warn); }
+  .ending.conviction { border-color: var(--accent-dim); }
+  .ending::before, .ending::after {
+    content: "";
+    position: absolute;
+    width: 12px; height: 12px;
+    background: var(--accent);
+  }
+  .ending.bad::before, .ending.bad::after { background: var(--warn); }
+  .ending::before { top: -2px; left: -2px; }
+  .ending::after { bottom: -2px; right: -2px; }
+  .ending .badge {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .ending.bad .badge { color: var(--warn); }
+  .ending h3 {
+    font-size: 20px;
+    margin-bottom: 12px;
+    color: var(--fg);
+    font-weight: 700;
+  }
+  .ending p {
+    font-size: 13px;
+    color: var(--fg-soft);
+    line-height: 1.7;
+  }
+  .ending .reputation {
+    margin-top: 16px;
+    display: inline-block;
+    padding: 7px 16px;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  /* 오버레이 */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+  }
+  .overlay-card {
+    background: var(--bg);
+    border: 2px solid var(--accent);
+    padding: 24px;
+    max-width: 460px;
+    width: 100%;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .overlay-card::before, .overlay-card::after {
+    content: "";
+    position: absolute;
+    width: 12px; height: 12px;
+    background: var(--accent);
+  }
+  .overlay-card::before { top: -2px; left: -2px; }
+  .overlay-card::after { bottom: -2px; right: -2px; }
+  .overlay-card h2 {
+    font-size: 14px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .overlay-card p {
+    font-size: 13px;
+    color: var(--fg-soft);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  .overlay-card .voice-section {
+    background: var(--line-soft);
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 2px solid var(--accent-dim);
+  }
+  .overlay-card .voice-section h3 {
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .overlay-card .voice-section p {
+    font-size: 11px;
+    color: var(--fg-dim);
+    margin-bottom: 8px;
+  }
+  .overlay-card label {
+    display: block;
+    font-size: 11px;
+    color: var(--fg-dim);
+    margin-bottom: 4px;
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .overlay-card input, .overlay-card select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--fg-faint);
+    color: var(--fg);
+    padding: 9px 11px;
+    font-family: inherit;
+    font-size: 13px;
+    margin-bottom: 6px;
+    border-radius: 0;
+  }
+  .overlay-card input:focus, .overlay-card select:focus { outline: none; border-color: var(--accent); }
+  .overlay-card .footnote {
+    font-size: 11px;
+    color: var(--fg-faint);
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+  .overlay-card .options { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+
+  /* 타이핑 점 */
+  .typing { display: inline-flex; gap: 4px; margin: 8px 0; }
+  .typing span {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 0.6s ease-in-out infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  /* Splash */
+  .splash {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 80;
+    transition: opacity 0.5s ease-out;
+    padding: 24px;
+  }
+  .splash.hidden { opacity: 0; pointer-events: none; }
+  .splash .splash-art {
+    width: 220px;
+    height: 220px;
+    margin-bottom: 24px;
+  }
+  .splash .splash-art svg { width: 100%; height: 100%; shape-rendering: crispEdges; image-rendering: pixelated; }
+  .splash .logo-mark {
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  .splash .logo-title {
+    font-size: 30px;
+    color: var(--fg);
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .splash .logo-sub {
+    font-size: 12px;
+    color: var(--fg-dim);
+    margin-top: 14px;
+    letter-spacing: 0.05em;
+    font-weight: 400;
+  }
+  .splash .start {
+    margin-top: 32px;
+    background: var(--accent);
+    color: var(--bg);
+    border: 0;
+    padding: 13px 36px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    position: relative;
+    font-weight: 700;
+  }
+  .splash .start::before, .splash .start::after {
+    content: "";
+    position: absolute;
+    width: 4px; height: 4px;
+    background: var(--bg);
+  }
+  .splash .start::before { top: 0; left: 0; }
+  .splash .start::after { bottom: 0; right: 0; }
+  .splash .signal {
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--fg-faint);
+    letter-spacing: 0.1em;
+    animation: blink 1.6s ease-in-out infinite;
+  }
+
+  .audio-status {
+    font-size: 10px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* Nano Banana 이미지 통합용 */
+  .pix-art img, .pix-art .pix-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    display: block;
+  }
+  .npc-card .portrait img, .npc-card .portrait .pix-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 25%;
+    image-rendering: pixelated;
+    display: block;
+  }
+  .splash-art img, .splash-art .pix-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    display: block;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="lab-header">
+  <div>
+    <div class="brand">DOT GAMES</div>
+    <div class="brand-sub">Detective Voice — Demo v4</div>
+  </div>
+  <div class="controls">
+    <button class="lab-btn" id="btn-bgm">BGM</button>
+    <button class="lab-btn" id="btn-tts">음성</button>
+    <button class="lab-btn" id="btn-settings">설정</button>
+  </div>
+</div>
+
+<div class="iphone">
+  <div class="island"></div>
+  <div class="home-indicator"></div>
+  <div class="screen">
+    <div class="status-bar">
+      <span id="clock">21:48</span>
+      <span class="right">
+        <svg viewBox="0 0 16 12"><rect x="0" y="9" width="2" height="3"/><rect x="3" y="6" width="2" height="6"/><rect x="6" y="3" width="2" height="9"/><rect x="9" y="0" width="2" height="12"/></svg>
+        <span class="audio-status" id="audio-indicator"></span>
+        <svg viewBox="0 0 24 12"><rect x="0" y="2" width="20" height="8" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2" y="4" width="14" height="4"/><rect x="21" y="4" width="2" height="4"/></svg>
+      </span>
+    </div>
+
+    <div class="splash" id="splash">
+      <div class="splash-art" id="splash-art"></div>
+      <div class="logo-mark">DETECTIVE VOICE</div>
+      <div class="logo-title">마지막 손님</div>
+      <div class="logo-sub">시그니처 사건 #1</div>
+      <button class="start" onclick="hideSplash()">▶ 시작</button>
+      <div class="signal">화면을 보지 마세요. 귀로 들으세요.</div>
+    </div>
+
+    <div class="app-shell" id="shell"></div>
+  </div>
+</div>
+
+<!-- 설정 오버레이 -->
+<div class="overlay" id="overlay" style="display:none;">
+  <div class="overlay-card">
+    <h2>SETUP — API 키 (선택)</h2>
+    <p>키를 입력하면 자유 타이핑(AI 응답)과 자연스러운 한국어 음성이 켜져요. 키 없이도 클릭 모드 + 시스템 음성으로 진행 가능해요. 키는 어디에도 전송되지 않고 브라우저 세션 안에서만 사용돼요.</p>
+
+    <div class="voice-section">
+      <h3>🎙 음성 — 무료 옵션 (자연스러움 순)</h3>
+      <p>1순위 <strong>Microsoft Azure</strong> (월 50만 글자 무료, ko-KR-SunHiNeural 신경망 보이스 — Aria 톤에 가장 잘 맞음)<br/>
+      2순위 <strong>Web Speech API</strong> (키 불필요, OS 보이스 — macOS Yuna는 양호, Windows는 평범)<br/>
+      <em style="color:var(--fg-faint)">키 없으면 자동으로 시스템 음성 사용</em></p>
+
+      <label>AZURE SPEECH KEY (선택)</label>
+      <input type="password" id="az-key" placeholder="32자리 키" autocomplete="off" />
+
+      <label>AZURE REGION (선택, 기본: koreacentral)</label>
+      <select id="az-region">
+        <option value="koreacentral">koreacentral (한국, 가장 빠름)</option>
+        <option value="eastus">eastus</option>
+        <option value="westus">westus</option>
+        <option value="westeurope">westeurope</option>
+        <option value="southeastasia">southeastasia</option>
+      </select>
+
+      <label>VOICE</label>
+      <select id="az-voice">
+        <option value="ko-KR-SunHiNeural">SunHi (여성, 따뜻 — Aria 추천)</option>
+        <option value="ko-KR-JiMinNeural">JiMin (여성, 발랄)</option>
+        <option value="ko-KR-YuJinNeural">YuJin (여성, 차분)</option>
+        <option value="ko-KR-InJoonNeural">InJoon (남성, 진지)</option>
+        <option value="ko-KR-BongJinNeural">BongJin (남성, 친근)</option>
+        <option value="ko-KR-GookMinNeural">GookMin (남성, 묵직)</option>
+      </select>
+    </div>
+
+    <div class="voice-section">
+      <h3>🤖 AI 자유 응답 (선택)</h3>
+      <p>키 입력 시 NPC 심문에서 자유 타이핑이 가능. 사건 1편당 약 $0.10.</p>
+      <label>ANTHROPIC API KEY</label>
+      <input type="password" id="anth-key" placeholder="sk-ant-..." autocomplete="off" />
+    </div>
+
+    <div class="footnote">
+      Azure 발급: portal.azure.com → Speech 리소스 생성 (무료 F0 등급 선택)<br/>
+      Anthropic 발급: console.anthropic.com<br/>
+      세션 종료 시 키는 자동으로 지워져요.
+    </div>
+
+    <div class="options">
+      <button class="primary-btn" onclick="saveSettings()">▶ 저장하고 시작</button>
+      <button class="ghost-btn" onclick="skipSettings()">키 없이 시작 (시스템 음성)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 사건 데이터
+// ============================================================
+const CASE = {
+  premise: `강남 골목 깊숙한 곳, 작은 와인바 '루나'. 어젯밤 폐점 직후 사장 정민호 씨가 가게 안에서 시신으로 발견됐어요. 사인은 둔기에 의한 후두부 외상.
+
+가게 안엔 폐점 시각인 밤 11시 30분 이후의 결제 기록이 한 건 더 있었어요. 살해 추정 시각의 마지막 손님 4명, 그리고 사장에게 빚이 있던 절친 한 명.
+
+의뢰인은 정민호 씨의 누나로, "동생은 누구한테 원한 살 사람이 아니다"라고 해요.
+
+자, 시작할 준비가 되셨다면, 어디서부터 보시겠어요?`,
+  scenes: [
+    { id: "scene_crime_scene", name: "와인바 '루나' — 사건 현장", art: 'wine_bar',
+      objects: [
+        { name: "시신 주변", revealsId: "ev_broken_bottle",
+          desc: "정 사장의 머리 근처에 깨진 와인병 하나가 떨어져 있어요. 라벨이 절반쯤 떨어져 있지만 '샤또 마고'로 보여요. 단면에 정 사장의 혈흔이 묻어 있어요." },
+        { name: "카운터 위 — POS 영수증", revealsId: "ev_receipt_2342",
+          desc: "POS 영수증이 한 장 그대로 놓여 있어요. 폐점 12분 후인 밤 11시 42분, 박준영 명의 카드로 '샤또 마고 2015' 한 병, 35만원 결제." },
+        { name: "사장의 휴대폰", revealsId: "ev_text_message",
+          desc: "잠금이 풀려 있어요. 김유진이라는 이름과 6개월간 주고받은 메시지. 마지막 메시지는 사건 3일 전 — '준영이가 눈치챈 것 같아. 우리 정리하자.'" },
+        { name: "안쪽 와인 보관실", revealsId: "ev_wine_inventory",
+          desc: "사장의 손글씨 재고 장부예요. '샤또 마고 2015'는 사건 당일 마지막 1병이 밤 9시에 다른 손님에게 팔려서 0병이 됐다고 적혀 있어요. 다음 입고는 다음 주." }
+      ] },
+    { id: "scene_alley", name: "가게 앞 골목", art: 'alley',
+      objects: [
+        { name: "편의점 CCTV 확인", revealsId: "ev_cctv_outside",
+          desc: "편의점 CCTV에 박준영이 밤 10시 10분에 가게로 들어가는 모습, 그리고 자정 15분에 혼자 나와 택시를 잡는 모습이 또렷이 잡혀 있어요. 폐점 후 45분이나 더 머물렀어요." }
+      ] },
+    { id: "scene_morgue", name: "국과수 부검실", art: 'morgue',
+      objects: [
+        { name: "부검 보고서", revealsId: "ev_autopsy",
+          desc: "사인은 둔기에 의한 후두부 외상. 사망 추정 시각 밤 11시 30분에서 11시 45분 사이. 흉기는 두꺼운 유리로 추정 — 깨진 와인병과 일치해요." }
+      ] }
+  ],
+  npcs: [
+    { id: "park_junyoung", name: "박준영", age: 45, role: "용의자 · 절친 · 빚 3천만원",
+      anxietyStart: 35, portrait: 'park',
+      systemPromptExtra: `당신은 박준영, 45세 남성. 무역회사 운영. 정민호와 20년 절친.
+- 진실: 어젯밤 정민호와 단둘이 남았을 때 와인병으로 후두부를 가격해 살해했다. 동기는 아내 김유진과 정민호의 6개월 비밀 연애를 알게 됐고, 빚을 빌미로 추궁하다 우발적으로 저질렀다. 알리바이를 만들려 본인 카드로 23:42에 '샤또 마고 2015' 한 병을 결제했다.
+- 거짓말 #1 (영화): "어젯밤 아내랑 영화 '기생충'을 다시 봤다." 진실은 집에 도착했을 때 아내는 자고 있었고 영화는 안 봤다.
+- 거짓말 #2 (와인 결제): "샤또 마고 한 병을 사서 들고 갔다." 진실은 그 시점에 가게에 그 와인이 한 병도 없었다 — 알리바이 위조용이었다.
+- 거짓말 #3 (아내와 정민호): "둘이 친했다. 그게 다예요." 진실은 정민호와 김유진이 6개월 연애 중이었음을 최근 알게 됐다.
+- 톤: 침착하지만 거짓말 시 손이 떨림.` },
+    { id: "kim_yujin", name: "김유진", age: 42, role: "박준영의 아내 · 정민호 비밀 연인",
+      anxietyStart: 60, portrait: 'kim',
+      systemPromptExtra: `당신은 김유진, 42세 여성. 미술학원 강사. 박준영의 아내.
+- 진실: 정민호와 6개월간 비밀 연인 관계였고, 정민호가 일본으로 떠나기 전 정리하기로 했다. 사건 소식에 충격과 죄책감. 어젯밤 11시쯤 잠들었고, 0시 30분경 차 시동 소리에 한 번 깼다. 남편이 영화를 같이 본 적은 없다.
+- 톤: 슬픔과 죄책감. 모든 질문에 솔직하게 답한다.` },
+    { id: "lee_minji", name: "이민지", age: 29, role: "와인바 직원 · 9시 30분 퇴근",
+      anxietyStart: 30, portrait: 'lee',
+      systemPromptExtra: `당신은 이민지, 29세 여성. 와인바 '루나' 직원.
+- 진실: 21:30에 퇴근. 사장이 박준영에게 3천만원을 빌려준 일을 안다. '샤또 마고 2015'는 21:00에 단골 최동수에게 마지막 한 병이 팔려 가게에 0병이 됐다.
+- 톤: 빠르게 말하고 자주 '음...'으로 시작.` },
+    { id: "choi_dongsoo", name: "최동수", age: 55, role: "단골 · 9시에 마지막 한 병 구매",
+      anxietyStart: 10, portrait: 'choi',
+      systemPromptExtra: `당신은 최동수, 55세 남성. 와인바 단골.
+- 진실: 21:00에 '샤또 마고 2015' 마지막 한 병을 샀다. 21:30에 가게 나와서 친구들과 노래방 갔고 새벽 2시까지였다.
+- 톤: 웃으면서 말함. 부산 사투리 살짝.` }
+  ],
+  evidenceMap: {
+    "ev_broken_bottle": "깨진 와인병 (샤또 마고 라벨, 정 사장의 혈흔) — 범행 도구.",
+    "ev_receipt_2342": "23:42 박준영 카드 결제 영수증 (샤또 마고 한 병).",
+    "ev_text_message": "정민호와 김유진의 6개월 비밀 연애 메시지.",
+    "ev_wine_inventory": "재고 장부 — 샤또 마고는 21:00에 마지막 한 병이 팔려 사건 당시 0병.",
+    "ev_cctv_outside": "편의점 CCTV — 박준영이 22:10 입장, 0:15 퇴장.",
+    "ev_autopsy": "부검 — 사망 시각 23:30~23:45, 흉기는 두꺼운 유리.",
+    "ev_wife_testimony": "김유진 증언 — 어젯밤 영화 본 적 없음, 남편 귀가는 0:30.",
+    "ev_text_message_confirm": "김유진 본인 확인 — 정민호와 6개월 비밀 연애.",
+    "ev_wine_inventory_oral": "직원 이민지 증언 — 21시에 최동수가 마지막 한 병 구매."
+  },
+  scriptedQuestions: {
+    park_junyoung: [
+      { q: "어젯밤 어디 있었어요?", a: "[한숨] 집에 있었어요. 아내랑 같이 영화 보고 잤습니다.", delta: 5 },
+      { q: "어떤 영화요?", a: "어... '기생충'이요. 다시 보고 있었어요.", delta: 5 },
+      { q: "사장한테 빚이 있었다고 들었는데", a: "[침묵] 누가 그래요? 그래요, 좀 빌렸어요. 갚으려 했어요.", delta: 10 },
+      { q: "23시 42분 영수증 봤어요. 와인 한 병 결제하셨던데", a: "샤또 마고 한 병 사서 들고 갔어요. 정민호가 마지막으로 권한 와인이라.", delta: 8, requires: "ev_receipt_2342" },
+      { q: "그날 가게엔 샤또 마고가 한 병도 없었어요. 21시에 다 팔렸거든요", a: "[떨림] 그럴 리가 없는데. 분명히... [작게] 분명히 결제했어요.", delta: 25, requires: "ev_wine_inventory" },
+      { q: "당신 아내는 어젯밤 영화 본 적 없다고 하던데요", a: "[침묵] 뭐라고요? 아내가 그렇게 말했어요? 뭔가 착각한 것 같은데.", delta: 20, requires: "ev_wife_testimony" },
+      { q: "정민호 사장과 부인 김유진 씨, 둘 사이 알고 계셨죠?", a: "[떨림] [한숨] 언제부터 알았어요? 정민호 그 새끼가, [침묵] 아내한테 손을 댔다고요.", delta: 30, requires: "ev_text_message" }
+    ],
+    kim_yujin: [
+      { q: "정민호 씨와 어떤 사이였나요?", a: "[침묵] 6개월 됐어요. 아무도 모르게. 그 사람이 일본으로 떠나기 전에 정리하기로 했었어요.", delta: 0, revealsId: "ev_text_message_confirm" },
+      { q: "어젯밤 남편이 들어온 시간을 기억하세요?", a: "11시쯤 잠들었는데, 차 시동 소리에 한 번 깼어요. 시계 보니 0시 30분이었어요.", delta: 0 },
+      { q: "남편이 어젯밤 같이 영화 봤다는데 사실인가요?", a: "[한숨] 아니요. 영화 같이 본 적 없어요. 어젯밤만이 아니라, 요즘은 그런 일이 거의 없어요.", delta: 0, revealsId: "ev_wife_testimony" }
+    ],
+    lee_minji: [
+      { q: "사장님과 박준영 씨 관계는 어땠어요?", a: "음... 친한 친구셨는데, 최근엔 좀 다투시는 분위기였어요. 박준영 씨가 자주 오셨고요.", delta: 5 },
+      { q: "샤또 마고 2015 와인은 가게에 있었나요?", a: "어, 그날 21시쯤 최동수 단골 손님이 마지막 한 병 사 가셨어요. 사장님이 직접 '이게 마지막'이라고 하셨어요.", delta: 0, revealsId: "ev_wine_inventory_oral" }
+    ],
+    choi_dongsoo: [
+      { q: "그날 무슨 와인 사 가셨어요?", a: "샤또 마고 2015. [웃음] 정 사장이 '이게 마지막 한 병이에요'라고 직접 건네줬는데, 다음 주에 입고된다고. 그게 마지막이 될 줄은 몰랐죠.", delta: 0 }
+    ]
+  }
+};
+
+// ============================================================
+// 픽셀 아트 — 공통 defs
+// ============================================================
+const SVG_DEFS = `
+<defs>
+  <pattern id="dither-10" patternUnits="userSpaceOnUse" width="6" height="6"><rect width="1" height="1" fill="#f4f1e8"/></pattern>
+  <pattern id="dither-20" patternUnits="userSpaceOnUse" width="5" height="5"><rect width="1" height="1" fill="#f4f1e8"/></pattern>
+  <pattern id="dither-25" patternUnits="userSpaceOnUse" width="4" height="4"><rect width="1" height="1" fill="#f4f1e8"/></pattern>
+  <pattern id="dither-33" patternUnits="userSpaceOnUse" width="3" height="3"><rect width="1" height="1" fill="#f4f1e8"/></pattern>
+  <pattern id="dither-50" patternUnits="userSpaceOnUse" width="2" height="2"><rect width="1" height="1" fill="#f4f1e8"/><rect x="1" y="1" width="1" height="1" fill="#f4f1e8"/></pattern>
+  <pattern id="dither-67" patternUnits="userSpaceOnUse" width="3" height="3"><rect width="2" height="2" fill="#f4f1e8"/></pattern>
+  <pattern id="dither-75" patternUnits="userSpaceOnUse" width="4" height="4"><rect width="1" height="1" fill="#000"/></pattern>
+  <pattern id="dither-am" patternUnits="userSpaceOnUse" width="4" height="4"><rect width="1" height="1" fill="#f4b54a"/></pattern>
+  <pattern id="dither-am-h" patternUnits="userSpaceOnUse" width="2" height="2"><rect width="1" height="1" fill="#f4b54a"/></pattern>
+  <pattern id="brick-p" patternUnits="userSpaceOnUse" width="20" height="10">
+    <rect width="20" height="10" fill="#000"/>
+    <line x1="0" y1="0" x2="20" y2="0" stroke="#f4f1e8" stroke-width="0.4" opacity="0.4"/>
+    <line x1="0" y1="5" x2="20" y2="5" stroke="#f4f1e8" stroke-width="0.4" opacity="0.4"/>
+    <line x1="0" y1="0" x2="0" y2="5" stroke="#f4f1e8" stroke-width="0.4" opacity="0.4"/>
+    <line x1="10" y1="5" x2="10" y2="10" stroke="#f4f1e8" stroke-width="0.4" opacity="0.4"/>
+  </pattern>
+  <pattern id="wood-p" patternUnits="userSpaceOnUse" width="40" height="4">
+    <rect width="40" height="4" fill="#000"/>
+    <line x1="0" y1="0" x2="40" y2="0" stroke="#f4f1e8" stroke-width="0.3" opacity="0.45"/>
+    <line x1="0" y1="2" x2="24" y2="2" stroke="#f4f1e8" stroke-width="0.3" opacity="0.25"/>
+  </pattern>
+  <pattern id="tile-p" patternUnits="userSpaceOnUse" width="20" height="20">
+    <rect width="20" height="20" fill="none"/>
+    <line x1="20" y1="0" x2="20" y2="20" stroke="#f4f1e8" stroke-width="0.4" opacity="0.35"/>
+    <line x1="0" y1="20" x2="20" y2="20" stroke="#f4f1e8" stroke-width="0.4" opacity="0.35"/>
+  </pattern>
+  <pattern id="parquet-p" patternUnits="userSpaceOnUse" width="24" height="12">
+    <rect width="24" height="12" fill="#000"/>
+    <line x1="0" y1="6" x2="24" y2="6" stroke="#f4f1e8" stroke-width="0.3" opacity="0.4"/>
+    <line x1="12" y1="0" x2="12" y2="12" stroke="#f4f1e8" stroke-width="0.3" opacity="0.4"/>
+  </pattern>
+  <pattern id="hatch-p" patternUnits="userSpaceOnUse" width="6" height="6">
+    <line x1="0" y1="6" x2="6" y2="0" stroke="#f4f1e8" stroke-width="0.6" opacity="0.35"/>
+  </pattern>
+</defs>`;
+
+// ============================================================
+// 장면 픽셀 아트
+// ============================================================
+const ART = {
+  splash: `<img src="img/splash.png" alt="안테나가 솟은 CRT 텔레비전 안에 사운드 웨이브가 흐르고 있어요. Detective Voice의 타이틀 이미지." class="pix-img" loading="lazy"/>`,
+  wine_bar: `<img src="img/wine_bar.png" alt="강남 와인바 루나의 사건 현장. 와인 보관대 앞 바닥에 사장이 쓰러져 있고 노란 폴리스 라인이 위쪽을 가로지르고 있어요." class="pix-img" loading="lazy"/>`,
+  alley: `<img src="img/alley.png" alt="비 내리는 한밤의 골목. 가로등이 노란 빛을 비추고 맞은편엔 24시간 편의점이 있어요." class="pix-img" loading="lazy"/>`,
+  morgue: `<img src="img/morgue.png" alt="국과수 부검실. 검안대 위 시신이 흰 시트에 덮여 있고 천장 형광등이 빛을 비춰요." class="pix-img" loading="lazy"/>`
+};
+
+// ============================================================
+// 단서별 픽셀 아트 (NEW in v4)
+// ============================================================
+const EVIDENCE_ART = {
+  ev_broken_bottle: `<img src="img/ev_broken_bottle.png" alt="깨진 와인병 — 샤또 마고 2015 라벨이 반쯤 떨어져 있고 끝부분이 깨졌어요. 혈흔과 유리 조각이 흩어져 있어요." class="pix-img" loading="lazy"/>`,
+  ev_receipt_2342: `<img src="img/ev_receipt.png" alt="POS 영수증 — 23시 42분 18초에 박준영 카드로 샤또 마고 2015 결제. 시간이 노란색으로 강조되어 있어요." class="pix-img" loading="lazy"/>`,
+  ev_text_message: `<img src="img/ev_text.png" alt="휴대폰 메시지 — 김유진과의 대화. 마지막 메시지에 "준영이가 눈치챈 것 같아. 우리 정리하자"가 강조되어 있어요." class="pix-img" loading="lazy"/>`,
+  ev_wine_inventory: `<img src="img/ev_inventory.png" alt="와인 재고 장부 — 5월 7일 손글씨로 적힌 와인 목록. 샤또 마고 2015가 노란색 강조 라인에 X 표시되어 있어요." class="pix-img" loading="lazy"/>`,
+  ev_cctv_outside: `<img src="img/ev_cctv.png" alt="편의점 CCTV — 자정 15분에 루나 와인바에서 박준영이 나오는 모습이 잡혀 있어요. SUSPECT 빨간 화살표 표시." class="pix-img" loading="lazy"/>`,
+  ev_autopsy: `<img src="img/ev_autopsy.png" alt="부검 보고서 — 사인은 둔기에 의한 후두부 외상, 사망 시각 23시 30분에서 45분. CONFIRMED 빨간 도장." class="pix-img" loading="lazy"/>`
+};
+
+// ============================================================
+// NPC 픽셀 포트레이트
+// ============================================================
+const PORTRAITS = {
+  park: `<img src="img/npc_park.png" alt="박준영, 45세 남성. 검은 정장에 노란 넥타이. 가는 눈, 다물린 입." class="pix-img" loading="lazy"/>`,
+  kim: `<img src="img/npc_kim.png" alt="김유진, 42세 여성. 긴 검은 머리, 눈물 흔적, 슬픈 표정. 노란 귀걸이와 목걸이." class="pix-img" loading="lazy"/>`,
+  lee: `<img src="img/npc_lee.png" alt="이민지, 29세 여성. 포니테일에 노란 묶음. 노란 앞치마에 "민지" 명찰. 친근한 미소." class="pix-img" loading="lazy"/>`,
+  choi: `<img src="img/npc_choi.png" alt="최동수, 55세 남성. B 로고 야구모자, 콧수염, 환한 미소. 체크 셔츠." class="pix-img" loading="lazy"/>`
+};
+
+// ============================================================
+// 게임 상태
+// ============================================================
+const state = {
+  stage: 'briefing',
+  discovered: new Set(),
+  asked: {},
+  npcAnxiety: {},
+  ended: null,
+  currentNpc: null,
+  npcMessages: {},
+  anthKey: null,
+  azureKey: null,
+  azureRegion: 'koreacentral',
+  azureVoice: 'ko-KR-SunHiNeural',
+  aiMode: false,
+  bgmOn: false,
+  ttsOn: true,
+  aiBusy: false,
+  ttsPlaying: false
+};
+CASE.npcs.forEach(n => { state.npcAnxiety[n.id] = n.anxietyStart; state.npcMessages[n.id] = []; });
+
+// ============================================================
+// BGM (그대로)
+// ============================================================
+let audioCtx = null;
+let bgmNodes = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function startBGM() {
+  if (bgmNodes) return;
+  ensureAudio();
+  const bufferSize = audioCtx.sampleRate * 2;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let lastOut = 0;
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    data[i] = (lastOut + (0.02 * white)) / 1.02;
+    lastOut = data[i];
+    data[i] *= 3.5;
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer; noise.loop = true;
+  const noiseFilter = audioCtx.createBiquadFilter();
+  noiseFilter.type = 'lowpass'; noiseFilter.frequency.value = 600;
+  const noiseGain = audioCtx.createGain(); noiseGain.gain.value = 0.035;
+  noise.connect(noiseFilter).connect(noiseGain).connect(audioCtx.destination);
+  noise.start();
+  const drone = audioCtx.createOscillator();
+  drone.type = 'sine'; drone.frequency.value = 55;
+  const droneGain = audioCtx.createGain();
+  droneGain.gain.value = 0.025;
+  drone.connect(droneGain).connect(audioCtx.destination);
+  drone.start();
+  const scale = [220, 277.18, 329.63, 349.23, 415.30];
+  function playNote() {
+    if (!bgmNodes) return;
+    const freq = scale[Math.floor(Math.random() * scale.length)];
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle'; osc.frequency.value = freq;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.018, audioCtx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.8);
+    osc.connect(g).connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 2);
+    setTimeout(playNote, 4500 + Math.random() * 6000);
+  }
+  setTimeout(playNote, 2500);
+  bgmNodes = { noise, drone };
+}
+function stopBGM() {
+  if (bgmNodes) {
+    try { bgmNodes.noise.stop(); bgmNodes.drone.stop(); } catch(e) {}
+    bgmNodes = null;
+  }
+}
+
+// ============================================================
+// TTS — Azure 우선, Web Speech 폴백
+// ============================================================
+let currentAudio = null;
+let preferredVoice = null;
+function loadVoices() {
+  if (!window.speechSynthesis) return;
+  const voices = speechSynthesis.getVoices();
+  preferredVoice =
+    voices.find(v => /yuna|seoyeon/i.test(v.name) && v.lang.startsWith('ko')) ||
+    voices.find(v => v.lang.startsWith('ko-KR') && /female|f$/i.test(v.name)) ||
+    voices.find(v => v.lang.startsWith('ko-KR')) ||
+    voices.find(v => v.lang.startsWith('ko'));
+}
+if (window.speechSynthesis) {
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+}
+
+// XML 이스케이프
+function escapeSsml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+// 디렉션 토큰 → SSML break 변환 + 자연스러운 호흡
+function textToSsml(text, voice) {
+  // [침묵] [한숨] 같은 토큰을 살짝 pause + 톤 변화로
+  let processed = text
+    .replace(/\[침묵\]/g, '<break time="600ms"/>')
+    .replace(/\[한숨\]/g, '<break time="400ms"/>')
+    .replace(/\[떨림\]/g, '<break time="200ms"/>')
+    .replace(/\[작게\]/g, '<prosody volume="-30%">')
+    .replace(/\[웃음\]/g, '<break time="300ms"/>')
+    .replace(/\[(.*?)\]/g, ''); // 그 외 토큰 제거
+  // [작게] 닫지 않은 prosody 닫기
+  const opens = (processed.match(/<prosody/g) || []).length;
+  const closes = (processed.match(/<\/prosody>/g) || []).length;
+  for (let i = 0; i < opens - closes; i++) processed += '</prosody>';
+  // 마침표/물음표/느낌표 뒤에 짧은 호흡
+  processed = processed.replace(/([.?!])\s/g, '$1 <break time="200ms"/> ');
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ko-KR">
+    <voice name="${voice}">
+      <prosody rate="-3%" pitch="0%">${processed}</prosody>
+    </voice>
+  </speak>`;
+}
+
+async function speak(text, opts = {}) {
+  if (!state.ttsOn) return;
+  stopSpeaking();
+  const cleaned = text.replace(/\[(.*?)\]/g, '').trim();
+  if (!cleaned) return;
+  state.ttsPlaying = true;
+  updateAudioIndicator();
+
+  // 1순위: Azure
+  if (state.azureKey) {
+    try {
+      const ssml = textToSsml(text, opts.voice || state.azureVoice);
+      const res = await fetch(`https://${state.azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+        method: 'POST',
+        headers: {
+          'Ocp-Apim-Subscription-Key': state.azureKey,
+          'Content-Type': 'application/ssml+xml',
+          'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+          'User-Agent': 'detective-voice-demo'
+        },
+        body: ssml
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudio = audio;
+      audio.onended = () => {
+        state.ttsPlaying = false;
+        updateAudioIndicator();
+        if (opts.onend) opts.onend();
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        state.ttsPlaying = false;
+        updateAudioIndicator();
+      };
+      await audio.play();
+      return;
+    } catch (e) {
+      console.warn('Azure TTS failed, fallback:', e);
+    }
+  }
+
+  // 폴백: Web Speech API
+  if (!window.speechSynthesis) {
+    state.ttsPlaying = false; updateAudioIndicator(); return;
+  }
+  const utter = new SpeechSynthesisUtterance(cleaned);
+  utter.lang = 'ko-KR';
+  utter.rate = opts.rate || 0.95;
+  utter.pitch = opts.npc ? 0.95 : 1.05;
+  if (preferredVoice) utter.voice = preferredVoice;
+  utter.onend = () => {
+    state.ttsPlaying = false;
+    updateAudioIndicator();
+    if (opts.onend) opts.onend();
+  };
+  speechSynthesis.speak(utter);
+}
+
+function stopSpeaking() {
+  if (currentAudio) { try { currentAudio.pause(); currentAudio = null; } catch(e){} }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  state.ttsPlaying = false;
+  updateAudioIndicator();
+}
+
+function updateAudioIndicator() {
+  const el = document.getElementById('audio-indicator');
+  if (!el) return;
+  el.innerHTML = state.ttsPlaying
+    ? `<span class="speaking-bars"><span></span><span></span><span></span><span></span><span></span></span>`
+    : '';
+}
+
+// ============================================================
+// AI — Anthropic
+// ============================================================
+async function callClaude(systemPrompt, messages, model = 'claude-haiku-4-5') {
+  if (!state.anthKey) throw new Error('No Anthropic key');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': state.anthKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ model, max_tokens: 350, system: systemPrompt, messages })
+  });
+  if (!res.ok) throw new Error('Claude error: ' + (await res.text()));
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+function buildNpcSystemPrompt(npc) {
+  const evidenceList = Array.from(state.discovered)
+    .map(id => `- ${CASE.evidenceMap[id]}`).join('\n') || '(아직 발견된 단서 없음)';
+  return `당신은 음성 추리 게임 'Detective Voice'의 등장 인물 ${npc.name}이다.
+사용자(플레이어)는 사립탐정 'Detective K'다. 당신은 이 사람의 심문에 응하고 있다.
+
+${npc.systemPromptExtra}
+
+## 플레이어가 이미 발견한 단서들
+${evidenceList}
+
+## 응답 형식
+- 한국어로, 1~3문장 이내, 100자 이내.
+- 감정 디렉션 토큰을 자연스럽게 섞어라: [침묵] [떨림] [작게] [한숨] [웃음].
+- 응답 마지막에 반드시: <<META:anxiety=숫자(0~100)>>
+- 위에 명시된 진실/거짓말 외 새로운 사실 만들기 절대 금지.`;
+}
+
+// ============================================================
+// 렌더링 헬퍼
+// ============================================================
+const shell = () => document.getElementById('shell');
+
+function getProgress() {
+  const stages = ['briefing', 'investigation', 'interrogation', 'deduction'];
+  return stages.indexOf(state.stage);
+}
+function renderProgress() {
+  const idx = getProgress();
+  return `<div class="progress">${[0,1,2,3].map(i => `<div class="seg ${i < idx ? 'done' : i === idx ? 'active' : ''}"></div>`).join('')}</div>`;
+}
+function renderHeader(stage, title, sub) {
+  return `${renderProgress()}<div class="pix-tag">${stage}</div><div class="pix-title">${title}</div>${sub ? `<div class="pix-sub">${sub}</div>` : ''}`;
+}
+
+function ariaSay(text, options = {}) {
+  setTimeout(() => {
+    if (state.ttsOn && options.autoSpeak !== false) speak(text);
+  }, 300);
+  return `<div class="aria-bubble">
+    <div class="label"><span class="pulse"></span>ARIA</div>
+    <div class="text">${text.replace(/\n/g, '<br/>')}</div>
+    <button class="speak-btn" onclick="speak(${JSON.stringify(text).replace(/"/g, '&quot;')})">▶ 재생</button>
+  </div>`;
+}
+
+// ============================================================
+// 단계별 화면
+// ============================================================
+function render() {
+  if (state.ended) return renderEnding();
+  if (state.stage === 'briefing') return renderBriefing();
+  if (state.stage === 'investigation') return renderInvestigation();
+  if (state.stage === 'interrogation') {
+    if (state.currentNpc) return renderInterrogationDetail(state.currentNpc);
+    return renderInterrogationList();
+  }
+  if (state.stage === 'deduction') return renderDeduction();
+}
+
+function renderBriefing() {
+  shell().innerHTML = `
+    ${renderHeader('Stage 1 / Briefing', '마지막 손님', '시그니처 #1 · 약 30~50분')}
+    <div class="pix-art">${ART.wine_bar}</div>
+    ${ariaSay(CASE.premise)}
+    <button class="primary-btn" onclick="state.stage='investigation';render()">▶ 사건 시작</button>
+  `;
+}
+
+function renderInvestigation() {
+  let html = renderHeader('Stage 2 / Investigation', '어디부터 살펴볼까요?', `발견한 단서 ${state.discovered.size}개`);
+  html += ariaSay(state.discovered.size === 0 ?
+    "현장은 그대로예요. 어디부터 시작할까요?" :
+    "단서가 모이고 있어요. 다른 곳도 살펴보거나 인물을 만나보시겠어요?", { autoSpeak: false });
+
+  CASE.scenes.forEach(s => {
+    if (s.objects.length === 0) return;
+    html += `<div class="scene-block">
+      <div class="scene-block-label">▸ ${s.name}</div>
+      <div class="pix-art">${ART[s.art]}</div>`;
+    s.objects.forEach((o, idx) => {
+      const found = state.discovered.has(o.revealsId);
+      html += `<div class="card ${found ? 'found' : ''}" onclick="examine('${s.id}', ${idx})">
+        <div class="card-title">${o.name}</div>
+        <div class="card-sub">${found ? '단서 확보 완료 · 다시 클릭해서 보기' : '클릭해서 살펴보기'}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `<div style="margin-top:18px">
+    <button class="primary-btn" onclick="state.stage='interrogation';state.currentNpc=null;render()">▶ 인물 심문하러 가기</button>
+    <button class="ghost-btn" onclick="showNotes()">▸ 사건 노트 (${state.discovered.size}건)</button>
+  </div>`;
+  shell().innerHTML = html;
+}
+
+function examine(sceneId, idx) {
+  const scene = CASE.scenes.find(s => s.id === sceneId);
+  const obj = scene.objects[idx];
+  const newlyFound = !state.discovered.has(obj.revealsId);
+  state.discovered.add(obj.revealsId);
+  const evArt = EVIDENCE_ART[obj.revealsId];
+  shell().innerHTML = `
+    ${renderHeader('Investigation', scene.name)}
+    ${newlyFound ? `<div class="clue-banner">신규 단서 — ${CASE.evidenceMap[obj.revealsId].split(' — ')[0]}</div>` : ''}
+    ${evArt ? `<div class="pix-art pix-art-evidence">${evArt}</div>` : `<div class="pix-art">${ART[scene.art]}</div>`}
+    ${ariaSay(obj.desc)}
+    <button class="primary-btn" onclick="state.stage='investigation';render()">▶ 계속 조사하기</button>
+    <button class="ghost-btn" onclick="showNotes()">▸ 사건 노트</button>
+  `;
+}
+
+function renderInterrogationList() {
+  let html = renderHeader('Stage 3 / Interrogation', '누구를 만나볼까요?', '단서를 들이밀면 거짓말이 무너져요');
+  html += ariaSay("증인과 용의자 네 명이에요. 한 명씩 만나서 모순을 찾아내세요.", { autoSpeak: false });
+  CASE.npcs.forEach(n => {
+    const anxiety = state.npcAnxiety[n.id];
+    html += `<div class="card npc-card" onclick="state.currentNpc='${n.id}';render()">
+      <div class="portrait">${PORTRAITS[n.portrait]}</div>
+      <div class="info">
+        <div class="name">${n.name}<span class="age">${n.age}세</span></div>
+        <div class="role">${n.role}</div>
+        <div class="anxiety"><div class="fill" style="width:${anxiety}%"></div></div>
+      </div>
+    </div>`;
+  });
+  html += `<div style="margin-top:18px">
+    <button class="primary-btn" onclick="state.stage='deduction';render()">▶ 추리 단계로</button>
+    <button class="ghost-btn" onclick="state.stage='investigation';render()">▸ 현장으로 돌아가기</button>
+    <button class="ghost-btn" onclick="showNotes()">▸ 사건 노트 (${state.discovered.size}건)</button>
+  </div>`;
+  shell().innerHTML = html;
+}
+
+function renderInterrogationDetail(npcId) {
+  const npc = CASE.npcs.find(n => n.id === npcId);
+  const anxiety = state.npcAnxiety[npcId];
+  let html = renderHeader('Interrogation', npc.name, npc.role);
+  html += `<div class="card npc-card" style="cursor:default">
+    <div class="portrait">${PORTRAITS[npc.portrait]}</div>
+    <div class="info">
+      <div class="name">${npc.name}<span class="age">${npc.age}세</span></div>
+      <div class="role">불안 ${anxiety}/100</div>
+      <div class="anxiety"><div class="fill" style="width:${anxiety}%"></div></div>
+    </div>
+  </div>`;
+
+  const messages = state.npcMessages[npcId];
+  if (messages.length > 0) {
+    html += `<div style="margin-top:8px">`;
+    messages.forEach(m => {
+      if (m.role === 'user') {
+        html += `<div style="font-size:13px;color:var(--fg-dim);margin:6px 0;padding:8px 11px;background:var(--line-soft);border-left:2px solid var(--fg-faint)"><strong style="color:var(--fg-soft)">탐정:</strong> ${m.content}</div>`;
+      } else {
+        const cleanText = m.content.replace(/<<META:.*?>>/, '').trim();
+        html += `<div class="npc-line"><div class="who">${npc.name}</div>${cleanText}</div>`;
+      }
+    });
+    html += `</div>`;
+  }
+
+  if (state.aiMode) {
+    html += `<div class="free-input">
+      <div class="label">▸ 자유 입력 (AI 모드)</div>
+      <textarea id="free-q" placeholder="자유롭게 질문하세요..." ${state.aiBusy ? 'disabled' : ''}></textarea>
+      <button onclick="askFree('${npcId}')" ${state.aiBusy ? 'disabled' : ''}>${state.aiBusy ? '응답 중...' : '▶ 질문하기'}</button>
+      ${state.aiBusy ? '<div class="typing"><span></span><span></span><span></span></div>' : ''}
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--fg-faint);text-align:center;letter-spacing:0.05em">— 또는 미리 준비된 질문 —</div>`;
+  }
+
+  const scripted = CASE.scriptedQuestions[npcId] || [];
+  html += `<div class="question-list">`;
+  scripted.forEach((q, idx) => {
+    const askedList = state.asked[npcId] || [];
+    const asked = askedList.includes(idx);
+    const locked = q.requires && !state.discovered.has(q.requires);
+    html += `<button class="q-btn ${asked ? 'asked' : ''} ${locked ? 'locked' : ''}" ${locked ? 'disabled' : ''} onclick="askScripted('${npcId}', ${idx})">
+      ${asked ? '✓ ' : ''}${q.q}
+      ${locked ? `<span class="lock-note">단서 필요: ${q.requires.replace('ev_', '').replace(/_/g, ' ')}</span>` : ''}
+    </button>`;
+  });
+  html += `</div>
+    <div style="margin-top:18px">
+      <button class="ghost-btn" onclick="state.currentNpc=null;render()">▸ 다른 인물 만나기</button>
+      <button class="ghost-btn" onclick="showNotes()">▸ 사건 노트 (${state.discovered.size}건)</button>
+    </div>`;
+  shell().innerHTML = html;
+
+  if (messages.length > 0 && messages[messages.length-1].role === 'assistant' && state.ttsOn) {
+    const last = messages[messages.length-1].content.replace(/<<META:.*?>>/, '').trim();
+    setTimeout(() => speak(last, { npc: true }), 200);
+  }
+}
+
+function askScripted(npcId, idx) {
+  const q = CASE.scriptedQuestions[npcId][idx];
+  state.asked[npcId] = state.asked[npcId] || [];
+  if (!state.asked[npcId].includes(idx)) state.asked[npcId].push(idx);
+  state.npcAnxiety[npcId] = Math.min(100, state.npcAnxiety[npcId] + (q.delta || 0));
+  if (q.revealsId) state.discovered.add(q.revealsId);
+  state.npcMessages[npcId].push({ role: 'user', content: q.q });
+  state.npcMessages[npcId].push({ role: 'assistant', content: q.a });
+  render();
+}
+
+async function askFree(npcId) {
+  const ta = document.getElementById('free-q');
+  const userMessage = ta.value.trim();
+  if (!userMessage) return;
+  state.aiBusy = true;
+  state.npcMessages[npcId].push({ role: 'user', content: userMessage });
+  ta.value = '';
+  render();
+  try {
+    const npc = CASE.npcs.find(n => n.id === npcId);
+    const sys = buildNpcSystemPrompt(npc);
+    const text = await callClaude(sys, state.npcMessages[npcId]);
+    state.npcMessages[npcId].push({ role: 'assistant', content: text });
+    const m = text.match(/<<META:anxiety=(\d+)/);
+    if (m) state.npcAnxiety[npcId] = parseInt(m[1]);
+  } catch (e) {
+    state.npcMessages[npcId].push({ role: 'assistant', content: '[시스템: API 호출 실패. 키 확인.] <<META:anxiety=' + state.npcAnxiety[npcId] + '>>' });
+    console.error(e);
+  }
+  state.aiBusy = false;
+  render();
+}
+
+function showNotes() {
+  let html = renderHeader('Case Notes', '발견된 단서', `${state.discovered.size}건 / 9건 가능`);
+  html += `<div class="notebook"><div class="nb-title">Recovered Evidence</div>`;
+  if (state.discovered.size === 0) {
+    html += `<div class="empty">아직 발견된 단서가 없어요.</div>`;
+  } else {
+    html += `<ul>`;
+    state.discovered.forEach(id => {
+      if (CASE.evidenceMap[id]) html += `<li>${CASE.evidenceMap[id]}</li>`;
+    });
+    html += `</ul>`;
+  }
+  html += `</div>
+    <button class="primary-btn" onclick="render()">▶ 닫기</button>`;
+  shell().innerHTML = html;
+}
+
+function renderDeduction() {
+  shell().innerHTML = `
+    ${renderHeader('Stage 4 / Deduction', '추리할 시간', '범인·동기·증거 세 가지를 골라 고발하세요')}
+    ${ariaSay("자, 누가 했다고 생각하시나요? 범인과 동기, 그리고 그걸 뒷받침하는 핵심 증거 세 가지를 골라주세요.")}
+    <div class="deduction-form">
+      <label>범인</label>
+      <select id="d-culprit">
+        <option value="">선택...</option>
+        <option value="park_junyoung">박준영 (절친)</option>
+        <option value="kim_yujin">김유진 (연인)</option>
+        <option value="lee_minji">이민지 (직원)</option>
+        <option value="choi_dongsoo">최동수 (단골)</option>
+      </select>
+      <label>동기</label>
+      <select id="d-motive">
+        <option value="">선택...</option>
+        <option value="affair_debt">아내와의 관계 + 빚</option>
+        <option value="debt_only">단순 빚 변제 갈등</option>
+        <option value="affair_revenge">치정</option>
+        <option value="other">기타</option>
+      </select>
+      <label>핵심 증거 1</label>
+      <select id="d-ev1">${dEvOpts()}</select>
+      <label>핵심 증거 2</label>
+      <select id="d-ev2">${dEvOpts()}</select>
+      <label>핵심 증거 3</label>
+      <select id="d-ev3">${dEvOpts()}</select>
+    </div>
+    <button class="primary-btn" onclick="submitDeduction()" style="margin-top:18px">▶ 고발한다</button>
+    <button class="ghost-btn" onclick="state.stage='interrogation';state.currentNpc=null;render()">▸ 더 심문하기</button>
+  `;
+}
+
+function dEvOpts() {
+  return `<option value="">선택...</option>
+    <option value="ev_receipt_2342">23:42 결제 영수증</option>
+    <option value="ev_wine_inventory">와인 재고 장부</option>
+    <option value="ev_text_message">정민호-김유진 메시지</option>
+    <option value="ev_wife_testimony">김유진 증언</option>
+    <option value="ev_cctv_outside">편의점 CCTV</option>
+    <option value="ev_broken_bottle">깨진 와인병</option>
+    <option value="ev_autopsy">부검 보고서</option>`;
+}
+
+function submitDeduction() {
+  const culprit = document.getElementById('d-culprit').value;
+  const motive = document.getElementById('d-motive').value;
+  const evs = ['d-ev1','d-ev2','d-ev3'].map(id => document.getElementById(id).value).filter(Boolean);
+  let result;
+  if (!culprit) result = { type: 'inconclusive' };
+  else if (culprit !== 'park_junyoung') result = { type: 'wrong_suspect' };
+  else {
+    const keyEvs = new Set(['ev_receipt_2342','ev_wine_inventory','ev_text_message','ev_wife_testimony']);
+    const matched = evs.filter(e => keyEvs.has(e)).length;
+    if (motive === 'affair_debt' && matched >= 3) result = { type: 'perfect' };
+    else if (motive === 'other') result = { type: 'wrong_suspect' };
+    else result = { type: 'conviction' };
+  }
+  state.ended = result;
+  render();
+}
+
+function renderEnding() {
+  const map = {
+    perfect: { cls: '', badge: 'Perfect', title: '완벽한 추리',
+      text: "법정에서 박준영은 결국 모든 것을 인정했어요. \"그날 밤, 정민호가 마지막으로 권한 와인을 들고 나가는 척하고 싶었어요.\" 사건은 종결됐고, 의뢰인은 짧은 편지를 남겼어요. \"동생이 마지막에 만난 사람이 누군지 알게 해줘서 고마워요.\"",
+      rep: 50 },
+    conviction: { cls: 'conviction', badge: 'Conviction', title: '부분 유죄',
+      text: "박준영은 기소됐지만 변호사의 반박으로 동기 입증이 약했어요. 살인보다 가벼운 과실치사로 감형됐어요.",
+      rep: 25 },
+    wrong_suspect: { cls: 'bad', badge: 'Wrong Suspect', title: '잘못된 추리',
+      text: "당신의 추리는 법정에서 무너졌어요. 진범은 자유로워졌어요.",
+      rep: 0 },
+    inconclusive: { cls: 'bad', badge: 'Inconclusive', title: '미해결',
+      text: "사건은 미해결로 분류됐어요. 콜드케이스 폴더에 들어갔어요.",
+      rep: state.discovered.size }
+  };
+  const r = map[state.ended.type];
+  shell().innerHTML = `
+    ${renderHeader('Case Closed', '사건 종결')}
+    ${ariaSay(r.text)}
+    <div class="ending ${r.cls}">
+      <div class="badge">${r.badge}</div>
+      <h3>${r.title}</h3>
+      <div class="reputation">REP +${r.rep}</div>
+    </div>
+    <button class="primary-btn" onclick="restart()" style="margin-top:18px">▶ 다시 시작</button>
+    <div style="font-size:11px;color:var(--fg-faint);text-align:center;margin-top:14px;line-height:1.7">
+      Demo v4 · 실제 게임은 화면 없이 음성으로 진행<br/>AI가 매번 새 사건 생성
+    </div>
+  `;
+}
+
+function restart() {
+  state.stage = 'briefing';
+  state.discovered = new Set();
+  state.asked = {};
+  state.npcAnxiety = {};
+  state.ended = null;
+  state.currentNpc = null;
+  state.npcMessages = {};
+  CASE.npcs.forEach(n => { state.npcAnxiety[n.id] = n.anxietyStart; state.npcMessages[n.id] = []; });
+  render();
+  document.getElementById('splash').classList.remove('hidden');
+}
+
+// ============================================================
+// 시계 / Splash / 설정
+// ============================================================
+function tickClock() {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+setInterval(tickClock, 30000);
+tickClock();
+
+function hideSplash() {
+  document.getElementById('splash').classList.add('hidden');
+  if (!state.azureKey && !state.anthKey && !sessionStorage.getItem('dv_skipped_setup')) {
+    document.getElementById('overlay').style.display = 'flex';
+  }
+}
+
+function saveSettings() {
+  const aKey = document.getElementById('anth-key').value.trim();
+  const azKey = document.getElementById('az-key').value.trim();
+  const azReg = document.getElementById('az-region').value;
+  const azVoice = document.getElementById('az-voice').value;
+
+  if (aKey) {
+    state.anthKey = aKey;
+    state.aiMode = true;
+    try { sessionStorage.setItem('dv_anth_key', aKey); } catch(e){}
+  }
+  if (azKey) {
+    state.azureKey = azKey;
+    state.azureRegion = azReg;
+    state.azureVoice = azVoice;
+    try {
+      sessionStorage.setItem('dv_az_key', azKey);
+      sessionStorage.setItem('dv_az_region', azReg);
+      sessionStorage.setItem('dv_az_voice', azVoice);
+    } catch(e){}
+  }
+
+  document.getElementById('overlay').style.display = 'none';
+  if (!state.bgmOn) {
+    state.bgmOn = true;
+    startBGM();
+    document.getElementById('btn-bgm').classList.add('active');
+  }
+}
+
+function skipSettings() {
+  sessionStorage.setItem('dv_skipped_setup', '1');
+  document.getElementById('overlay').style.display = 'none';
+  if (!state.bgmOn) {
+    state.bgmOn = true;
+    startBGM();
+    document.getElementById('btn-bgm').classList.add('active');
+  }
+}
+
+document.getElementById('btn-bgm').addEventListener('click', () => {
+  state.bgmOn = !state.bgmOn;
+  if (state.bgmOn) { ensureAudio(); startBGM(); } else stopBGM();
+  document.getElementById('btn-bgm').classList.toggle('active', state.bgmOn);
+});
+document.getElementById('btn-tts').addEventListener('click', () => {
+  state.ttsOn = !state.ttsOn;
+  if (!state.ttsOn) stopSpeaking();
+  document.getElementById('btn-tts').classList.toggle('active', state.ttsOn);
+});
+document.getElementById('btn-settings').addEventListener('click', () => {
+  document.getElementById('overlay').style.display = 'flex';
+});
+
+document.getElementById('btn-tts').classList.add('active');
+
+// 세션 캐시 복원
+try {
+  const a = sessionStorage.getItem('dv_anth_key');
+  const az = sessionStorage.getItem('dv_az_key');
+  const azr = sessionStorage.getItem('dv_az_region');
+  const azv = sessionStorage.getItem('dv_az_voice');
+  if (a) { state.anthKey = a; state.aiMode = true; document.getElementById('anth-key').value = a; }
+  if (az) { state.azureKey = az; document.getElementById('az-key').value = az; }
+  if (azr) { state.azureRegion = azr; document.getElementById('az-region').value = azr; }
+  if (azv) { state.azureVoice = azv; document.getElementById('az-voice').value = azv; }
+} catch(e) {}
+
+document.getElementById('splash-art').innerHTML = ART.splash;
+render();
+</script>
+</body>
+</html>
