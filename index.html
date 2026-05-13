@@ -959,35 +959,44 @@
 <!-- 설정 오버레이 -->
 <div class="overlay" id="overlay" style="display:none;">
   <div class="overlay-card">
-    <h2>SETUP — API 키 (선택)</h2>
-    <p>키를 입력하면 자유 타이핑(AI 응답)과 자연스러운 한국어 음성이 켜져요. 키 없이도 클릭 모드 + 시스템 음성으로 진행 가능해요. 키는 어디에도 전송되지 않고 브라우저 세션 안에서만 사용돼요.</p>
+    <h2 id="setup-title">SETUP — API Keys (optional)</h2>
+    <p id="setup-desc">With keys, free-form typing (AI responses) and natural voice are enabled. Without keys, the demo runs in click-mode with system voice. Keys are stored only in this browser session.</p>
+
+    <label id="setup-lang-label">Language (언어)</label>
+    <select id="setup-lang">
+      <option value="en">English</option>
+      <option value="ko">한국어</option>
+    </select>
 
     <div class="voice-section">
-      <h3>🎙 음성 — 무료 옵션 (자연스러움 순)</h3>
-      <p>1순위 <strong>Microsoft Azure</strong> (월 50만 글자 무료, ko-KR-SunHiNeural 신경망 보이스 — Aria 톤에 가장 잘 맞음)<br/>
-      2순위 <strong>Web Speech API</strong> (키 불필요, OS 보이스 — macOS Yuna는 양호, Windows는 평범)<br/>
-      <em style="color:var(--fg-faint)">키 없으면 자동으로 시스템 음성 사용</em></p>
+      <h3 id="setup-voice-title">🎙 Voice — free options (in order of quality)</h3>
+      <p id="setup-voice-desc">1st <strong>Microsoft Azure</strong> (500K chars/month free, neural voices)<br/>
+      2nd <strong>Web Speech API</strong> (no key, OS voice — macOS Yuna is good, Windows is average)<br/>
+      <em style="color:var(--fg-faint)">Without keys, system voice is used automatically</em></p>
 
       <label id="setup-az-key-label">AZURE SPEECH KEY (optional)</label>
-      <input type="password" id="az-key" placeholder="32자리 키" autocomplete="off" />
+      <input type="password" id="az-key" placeholder="32-character key" autocomplete="off" />
 
       <label id="setup-az-region-label">AZURE REGION (optional, default: koreacentral)</label>
       <select id="az-region">
-        <option value="koreacentral">koreacentral (한국, 가장 빠름)</option>
+        <option value="koreacentral" data-en="koreacentral (Korea, fastest)" data-ko="koreacentral (한국, 가장 빠름)">koreacentral (Korea, fastest)</option>
         <option value="eastus">eastus</option>
         <option value="westus">westus</option>
         <option value="westeurope">westeurope</option>
         <option value="southeastasia">southeastasia</option>
       </select>
 
-      <label>VOICE</label>
+      <label id="setup-voice-label">VOICE</label>
       <select id="az-voice">
-        <option value="ko-KR-SunHiNeural">SunHi (여성, 따뜻 — Aria 추천)</option>
-        <option value="ko-KR-JiMinNeural">JiMin (여성, 발랄)</option>
-        <option value="ko-KR-YuJinNeural">YuJin (여성, 차분)</option>
-        <option value="ko-KR-InJoonNeural">InJoon (남성, 진지)</option>
-        <option value="ko-KR-BongJinNeural">BongJin (남성, 친근)</option>
-        <option value="ko-KR-GookMinNeural">GookMin (남성, 묵직)</option>
+        <option value="en-US-AriaNeural" data-en="Aria (Female, warm — English)" data-ko="Aria (여성, 따뜻 — 영어)">Aria (Female, warm — English)</option>
+        <option value="en-US-JennyNeural" data-en="Jenny (Female, friendly — English)" data-ko="Jenny (여성, 친근 — 영어)">Jenny (Female, friendly — English)</option>
+        <option value="en-GB-SoniaNeural" data-en="Sonia (Female, British — English)" data-ko="Sonia (여성, 영국 — 영어)">Sonia (Female, British — English)</option>
+        <option value="en-US-GuyNeural" data-en="Guy (Male, calm — English)" data-ko="Guy (남성, 차분 — 영어)">Guy (Male, calm — English)</option>
+        <option value="ko-KR-SunHiNeural" data-en="SunHi (Female, warm — Korean)" data-ko="SunHi (여성, 따뜻 — 한국어)">SunHi (Female, warm — Korean)</option>
+        <option value="ko-KR-JiMinNeural" data-en="JiMin (Female, lively — Korean)" data-ko="JiMin (여성, 발랄 — 한국어)">JiMin (Female, lively — Korean)</option>
+        <option value="ko-KR-YuJinNeural" data-en="YuJin (Female, soft — Korean)" data-ko="YuJin (여성, 차분 — 한국어)">YuJin (Female, soft — Korean)</option>
+        <option value="ko-KR-InJoonNeural" data-en="InJoon (Male, serious — Korean)" data-ko="InJoon (남성, 진지 — 한국어)">InJoon (Male, serious — Korean)</option>
+        <option value="ko-KR-BongJinNeural" data-en="BongJin (Male, warm — Korean)" data-ko="BongJin (남성, 친근 — 한국어)">BongJin (Male, warm — Korean)</option>
       </select>
     </div>
 
@@ -1542,6 +1551,19 @@ function updateStaticUI() {
   if (voiceB) voiceB.textContent = t.voiceBtn;
   const setB = document.getElementById('btn-settings');
   if (setB) setB.textContent = t.settingsBtn;
+  // SETUP 모달의 placeholder
+  const azKeyInput = document.getElementById('az-key');
+  if (azKeyInput) azKeyInput.placeholder = state.lang === 'ko' ? '32자리 키' : '32-character key';
+  const anthKeyInput = document.getElementById('anth-key');
+  if (anthKeyInput) anthKeyInput.placeholder = state.lang === 'ko' ? 'sk-ant-... (선택)' : 'sk-ant-... (optional)';
+  // VOICE 라벨
+  const voiceLabel = document.getElementById('setup-voice-label');
+  if (voiceLabel) voiceLabel.textContent = state.lang === 'ko' ? '보이스' : 'VOICE';
+  // select option들 (data-en, data-ko로 라벨 보존)
+  document.querySelectorAll('#az-region option[data-en], #az-voice option[data-en]').forEach(opt => {
+    const newText = state.lang === 'ko' ? opt.getAttribute('data-ko') : opt.getAttribute('data-en');
+    if (newText) opt.textContent = newText;
+  });
 }
 
 
