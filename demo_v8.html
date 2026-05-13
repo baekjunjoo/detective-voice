@@ -1845,6 +1845,8 @@ function onDotpadMessage(device, code, msg) {
     state.dotpadDevice = device;
     state.dotpadName = device.connectDevice?.name || state.dotpadName || 'Dot Pad';
     updateDotpadStatus();
+    // 연결 시점에 화면 상태에 따라 dtms·점자 즉시 출력
+    setTimeout(syncDotpadToScreen, 200);
   } else if (code === DC.DeviceName) {
     state.dotpadName = msg || state.dotpadName;
     updateDotpadStatus();
@@ -1867,28 +1869,57 @@ function onDotpadKey(device, keyCode, msg) {
 }
 
 // 현재 화면에서 cursor가 이동 가능한 항목 목록
+// 보이는 + 비활성 아닌 항목만 필터
+function _visibleFilter(els) {
+  return els.filter(el => {
+    if (!el) return false;
+    if (el.disabled) return false;
+    if (el.hidden) return false;
+    // offsetParent === null이면 hidden 또는 display:none
+    if (el.offsetParent === null && el.tagName !== 'OPTION') return false;
+    // 부모가 hidden 모달이면 제외
+    const overlay = el.closest('.overlay');
+    if (overlay && overlay.style.display === 'none') return false;
+    const splashEl = el.closest('.splash');
+    if (splashEl && splashEl.classList.contains('hidden')) return false;
+    return true;
+  });
+}
+function _scope(selectors) {
+  // .app-shell 안의 항목 우선 (게임 화면), 없으면 전역
+  const shell = document.getElementById('shell');
+  if (shell) {
+    const found = Array.from(shell.querySelectorAll(selectors));
+    if (found.length) return _visibleFilter(found);
+  }
+  return _visibleFilter(Array.from(document.querySelectorAll(selectors)));
+}
 function dotpadCurrentItems() {
+  // splash가 떠 있으면 — 시작 버튼이 우선
+  const splashEl = document.getElementById('splash');
+  if (splashEl && !splashEl.classList.contains('hidden')) {
+    return _visibleFilter([splashEl.querySelector('.start')]);
+  }
   if (state.ended) {
-    return Array.from(document.querySelectorAll('.primary-btn'));
+    return _scope('.primary-btn');
   }
   if (state.dotpadNotesOpen || document.querySelector('.notebook')) {
-    return Array.from(document.querySelectorAll('.primary-btn'));
+    return _scope('.primary-btn');
   }
   if (state.stage === 'briefing') {
-    return Array.from(document.querySelectorAll('.primary-btn'));
+    return _scope('.primary-btn');
   }
   if (state.stage === 'investigation') {
-    // 단서 카드 + 다음 단계 버튼
-    return Array.from(document.querySelectorAll('.scene-block .card, .primary-btn, .ghost-btn'));
+    return _scope('.scene-block .card, .primary-btn, .ghost-btn');
   }
   if (state.stage === 'interrogation' && !state.currentNpc) {
-    return Array.from(document.querySelectorAll('.npc-card, .primary-btn, .ghost-btn'));
+    return _scope('.npc-card, .primary-btn, .ghost-btn');
   }
   if (state.stage === 'interrogation' && state.currentNpc) {
-    return Array.from(document.querySelectorAll('.q-btn:not([disabled]), .ghost-btn'));
+    return _scope('.q-btn:not([disabled]), .ghost-btn');
   }
   if (state.stage === 'deduction') {
-    return Array.from(document.querySelectorAll('.deduction-form select, .primary-btn, .ghost-btn'));
+    return _scope('.deduction-form select, .primary-btn, .ghost-btn');
   }
   return [];
 }
@@ -2452,20 +2483,37 @@ function render() {
 // 화면 그려진 후 cursor 리셋 + 첫 항목 highlight + Aria 텍스트 점자 출력
 function dotpadOnRender() {
   if (!state.dotpadConnected) return;
-  setTimeout(() => {
+  setTimeout(syncDotpadToScreen, 50);
+}
+
+// 현재 보이는 화면 상태에 맞춰 dtms·점자·cursor 한 번에 갱신
+function syncDotpadToScreen() {
+  if (!state.dotpadConnected) return;
+  const splashEl = document.getElementById('splash');
+  const splashVisible = splashEl && !splashEl.classList.contains('hidden');
+
+  // 1) splash 떠 있으면: splash dtms + 타이틀 점자
+  if (splashVisible) {
+    showOnDotpad('splash');
+    const t = T();
+    const titleLine = 'Detective Voice. ' + (t.splashTitle || 'The Last Customer') + '. ' + (t.splashSub || 'Signature Case 1') + '.';
+    brailleSetText(titleLine);
     state.dotpadCursor = 0;
     dotpadHighlight();
-    // 화면 첫 Aria 발화 텍스트를 점자로
-    const bubble = document.querySelector('.aria-bubble .text');
-    if (bubble) {
-      const text = (bubble.innerText || bubble.textContent || '').trim();
-      if (text) brailleSetText(text);
-    } else {
-      // Aria 없으면 현재 cursor 항목 텍스트
-      const items = dotpadCurrentItems();
-      if (items[0]) brailleSetText(dotpadItemText(items[0]));
-    }
-  }, 50);
+    return;
+  }
+
+  // 2) 게임 화면: cursor 첫 항목 + Aria 텍스트 점자
+  state.dotpadCursor = 0;
+  dotpadHighlight();
+  const bubble = document.querySelector('.aria-bubble .text');
+  if (bubble) {
+    const text = (bubble.innerText || bubble.textContent || '').trim();
+    if (text) { brailleSetText(text); return; }
+  }
+  // Aria 없으면 cursor 첫 항목 라벨로
+  const items = dotpadCurrentItems();
+  if (items[0]) brailleSetText(dotpadItemText(items[0]));
 }
 
 
@@ -2788,6 +2836,10 @@ tickClock();
 
 function hideSplash() {
   document.getElementById('splash').classList.add('hidden');
+  // splash 사라진 후 cursor highlight 정리
+  _clearDotpadFocus();
+  // Dot Pad 연결되어 있으면 브리핑 화면 sync
+  if (state.dotpadConnected) setTimeout(syncDotpadToScreen, 100);
   if (!state.azureKey && !state.anthKey && !sessionStorage.getItem('dv_skipped_setup')) {
     document.getElementById('overlay').style.display = 'flex';
   }
