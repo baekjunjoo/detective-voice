@@ -1855,13 +1855,13 @@ function onDotpadKey(device, keyCode, msg) {
   if (!window.DotPad) return;
   const KC = window.DotPad.KeyCodes;
   switch (keyCode) {
-    case KC.KeyFunction1: dotpadReplay(); break;
-    case KC.KeyFunction2: dotpadMove(-1); break;
-    case KC.KeyFunction3: dotpadMove(1); break;
-    case KC.KeyFunction4: dotpadSelect(); break;
-    case KC.PanningLeft:  dotpadBraillePage(-1); break;
-    case KC.PanningRight: dotpadBraillePage(1); break;
-    case KC.PanningAll:   dotpadToggleNotes(); break;
+    case KC.KeyFunction1: dotpadMove(-1); break;          // 이전 항목
+    case KC.KeyFunction2: dotpadMove(1); break;           // 다음 항목
+    case KC.KeyFunction3: dotpadSelect(); break;          // 선택
+    case KC.KeyFunction4: dotpadToggleNotes(); break;     // 사건 노트 토글
+    case KC.PanningLeft:  dotpadBraillePage(-1); break;   // 점자 이전 페이지
+    case KC.PanningRight: dotpadBraillePage(1); break;    // 점자 다음 페이지
+    case KC.PanningAll:   dotpadReplay(); break;          // 음성·점자 처음부터 다시
     default: break;
   }
 }
@@ -1961,9 +1961,35 @@ function dotpadReplay() {
 }
 
 function dotpadBraillePage(dir) {
-  if (!state.braillePages.length) return;
+  if (!state.braillePages.length) {
+    console.log('[Braille] no pages — page navigation ignored');
+    flashBrailleHint('No braille pages available');
+    return;
+  }
+  if (state.braillePages.length === 1) {
+    console.log('[Braille] only 1 page — page navigation noop');
+    flashBrailleHint('Only 1 page · ' + state.braillePages.length + '/' + state.braillePages.length);
+    return;
+  }
   state.brailleIdx = (state.brailleIdx + dir + state.braillePages.length) % state.braillePages.length;
   showBraillePage();
+  console.log('[Braille] page', (state.brailleIdx+1), '/', state.braillePages.length, '→', state.braillePages[state.brailleIdx]);
+  flashBrailleHint('Page ' + (state.brailleIdx+1) + ' / ' + state.braillePages.length);
+}
+
+// 점자 페이지 카운터 시각 피드백 (화면에 잠시 표시)
+function flashBrailleHint(msg) {
+  let el = document.getElementById('braille-hint');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'braille-hint';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:8px 16px;font-size:13px;font-weight:700;z-index:9999;border:2px solid var(--bg);box-shadow:0 4px 12px rgba(0,0,0,0.5);transition:opacity 0.3s;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._hideT);
+  el._hideT = setTimeout(() => { el.style.opacity = '0'; }, 1500);
 }
 
 function dotpadToggleNotes() {
@@ -1990,12 +2016,19 @@ function brailleSetText(text) {
   const cleanText = String(text).replace(/\[(.*?)\]/g, '').trim();
   const hex = textToBrailleHex(cleanText, state.lang);
   state.braillePages = [];
-  if (!hex) return;
+  if (!hex) {
+    console.log('[Braille] no hex generated for:', cleanText.substring(0,40));
+    return;
+  }
   for (let i = 0; i < hex.length; i += 40) {
     state.braillePages.push(hex.substring(i, i + 40).padEnd(40, '0'));
   }
   state.brailleIdx = 0;
   showBraillePage();
+  console.log('[Braille] new text · pages:', state.braillePages.length, '· text:', cleanText.substring(0,60) + (cleanText.length > 60 ? '...' : ''));
+  if (state.braillePages.length > 1) {
+    flashBrailleHint('Page 1 / ' + state.braillePages.length + ' · ← → to scroll');
+  }
 }
 
 // 영어 grade-1 점자 매핑 (dot pattern → 8-bit hex)
@@ -2451,7 +2484,7 @@ function renderInvestigation() {
   let html = renderHeader(T().stageInvestigation, T().invTitle, T().invSub(state.discovered.size));
   html += ariaSay(state.discovered.size === 0 ?
     T().ariaInvStart :
-    T().ariaInvContinue, { autoSpeak: false });
+    T().ariaInvContinue);
 
   L().scenes.forEach(s => {
     if (s.objects.length === 0) return;
@@ -2493,7 +2526,7 @@ function examine(sceneId, idx) {
 
 function renderInterrogationList() {
   let html = renderHeader(T().stageInterrogation, T().interTitle, T().interSub);
-  html += ariaSay(T().ariaInter, { autoSpeak: false });
+  html += ariaSay(T().ariaInter);
   L().npcs.forEach(n => {
     const anxiety = state.npcAnxiety[n.id];
     html += `<div class="card npc-card" onclick="state.currentNpc='${n.id}';render()">
