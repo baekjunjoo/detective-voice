@@ -97,6 +97,25 @@
     font-weight: 700;
   }
 
+
+  /* Dot Pad cursor highlight */
+  .dotpad-focus, .dotpad-focus:hover {
+    outline: 3px solid var(--accent) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 12px var(--accent), inset 0 0 0 1px var(--accent);
+    position: relative;
+    z-index: 5;
+  }
+  .dotpad-focus::before {
+    content: "▸";
+    position: absolute;
+    left: -16px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: bold;
+  }
+
   /* Dot Pad header button + popup */
   .dotpad-wrap { position: relative; }
   .dotpad-btn { display: inline-flex; align-items: center; gap: 6px; }
@@ -1699,6 +1718,10 @@ const state = {
   dotpadConnected: false,
   dotpadDevice: null,
   dotpadName: '',
+  dotpadCursor: 0,
+  braillePages: [],
+  brailleIdx: 0,
+  dotpadNotesOpen: false,
   discovered: new Set(),
   asked: {},
   npcAnxiety: {},
@@ -1796,7 +1819,11 @@ async function connectDotpadUsb() {
   }
 }
 
+function _clearDotpadFocus() {
+  document.querySelectorAll('.dotpad-focus').forEach(el => el.classList.remove('dotpad-focus'));
+}
 function disconnectDotpad() {
+  _clearDotpadFocus();
   if (!dotpadAvailable()) return;
   try { window.DotPad.sdk.disconnect(state.dotpadDevice); } catch(e){}
   state.dotpadConnected = false;
@@ -1827,123 +1854,212 @@ function onDotpadMessage(device, code, msg) {
 function onDotpadKey(device, keyCode, msg) {
   if (!window.DotPad) return;
   const KC = window.DotPad.KeyCodes;
-  console.log('Dot Pad key:', keyCode, msg);
   switch (keyCode) {
-    case KC.KeyFunction1:
-      // F1: Aria 발화 다시 듣기 — 현재 화면 첫 aria-bubble의 텍스트
-      dotpadReplayAria();
-      break;
-    case KC.KeyFunction2:
-      // F2: 사건 노트 열기
-      if (typeof showNotes === 'function') showNotes();
-      break;
-    case KC.KeyFunction3:
-      // F3: 이전 단서/NPC
-      dotpadNavigate(-1);
-      break;
-    case KC.KeyFunction4:
-      // F4: 다음 단서/NPC
-      dotpadNavigate(1);
-      break;
-    case KC.PanningLeft:
-      dotpadPagePrev();
-      break;
-    case KC.PanningRight:
-      dotpadPageNext();
-      break;
-    case KC.PanningAll:
-      // 양쪽 동시: 단계 진행 (현재 단계의 메인 액션)
-      dotpadAdvanceStage();
-      break;
-    default:
-      break;
+    case KC.KeyFunction1: dotpadReplay(); break;
+    case KC.KeyFunction2: dotpadMove(-1); break;
+    case KC.KeyFunction3: dotpadMove(1); break;
+    case KC.KeyFunction4: dotpadSelect(); break;
+    case KC.PanningLeft:  dotpadBraillePage(-1); break;
+    case KC.PanningRight: dotpadBraillePage(1); break;
+    case KC.PanningAll:   dotpadToggleNotes(); break;
+    default: break;
   }
 }
 
-// F1 — 현재 화면 첫 Aria 발화 재생
-function dotpadReplayAria() {
-  const bubble = document.querySelector('.aria-bubble .text');
-  if (bubble && typeof speak === 'function') {
-    const text = bubble.textContent || bubble.innerText;
-    if (text && text.trim()) speak(text.trim());
+// 현재 화면에서 cursor가 이동 가능한 항목 목록
+function dotpadCurrentItems() {
+  if (state.ended) {
+    return Array.from(document.querySelectorAll('.primary-btn'));
   }
-}
-
-// F3/F4 — 현재 화면에 따라 단서/NPC 이동
-function dotpadNavigate(dir) {
-  // 조사 화면: 단서 카드들 사이 이동
-  if (state.stage === 'investigation') {
-    const cards = Array.from(document.querySelectorAll('.scene-block .card'));
-    if (!cards.length) return;
-    const focused = document.activeElement;
-    let idx = cards.indexOf(focused);
-    if (idx < 0) idx = dir > 0 ? -1 : cards.length;
-    const next = cards[(idx + dir + cards.length) % cards.length];
-    if (next) { next.focus(); next.click(); }
-    return;
+  if (state.dotpadNotesOpen || document.querySelector('.notebook')) {
+    return Array.from(document.querySelectorAll('.primary-btn'));
   }
-  // 심문 리스트: NPC 카드들 사이
-  if (state.stage === 'interrogation' && !state.currentNpc) {
-    const npcs = L().npcs;
-    if (!npcs.length) return;
-    const cards = Array.from(document.querySelectorAll('.npc-card'));
-    if (!cards.length) return;
-    const focused = document.activeElement;
-    let idx = cards.indexOf(focused);
-    if (idx < 0) idx = dir > 0 ? -1 : cards.length;
-    const next = cards[(idx + dir + cards.length) % cards.length];
-    if (next) { next.click(); }
-    return;
-  }
-  // 심문 상세: 다음 NPC로 이동
-  if (state.stage === 'interrogation' && state.currentNpc) {
-    const npcs = L().npcs;
-    const curIdx = npcs.findIndex(n => n.id === state.currentNpc);
-    const newIdx = (curIdx + dir + npcs.length) % npcs.length;
-    state.currentNpc = npcs[newIdx].id;
-    if (typeof render === 'function') render();
-  }
-}
-
-// PanningLeft/Right — 단서가 DTMS multi-page일 때 페이지 넘기기
-let _dotpadPageIdx = 0;
-let _dotpadCurrentKey = null;
-function dotpadPagePrev() { dotpadChangePage(-1); }
-function dotpadPageNext() { dotpadChangePage(1); }
-async function dotpadChangePage(dir) {
-  if (!state.dotpadConnected || !window.DotPad) return;
-  if (!_dotpadCurrentKey) return;
-  const path = DTMS_MAP[_dotpadCurrentKey];
-  if (!path || !_dtmsCache[path]) return;
-  const items = _dtmsCache[path].items || [];
-  if (items.length <= 1) return;
-  _dotpadPageIdx = (_dotpadPageIdx + dir + items.length) % items.length;
-  const item = items[_dotpadPageIdx];
-  if (item.graphic && item.graphic.data) {
-    window.DotPad.sdk.displayGraphicData(item.graphic.data);
-  }
-  if (item.braille && item.braille.data) {
-    window.DotPad.sdk.displayTextData(item.braille.data);
-  } else if (item.text && item.text.data) {
-    window.DotPad.sdk.displayTextData(item.text.data);
-  }
-}
-
-// PanningAll — 현재 단계의 메인 진행 액션
-function dotpadAdvanceStage() {
-  if (state.ended) { if (typeof restart === 'function') restart(); return; }
   if (state.stage === 'briefing') {
-    state.stage = 'investigation';
-    if (typeof render === 'function') render();
-  } else if (state.stage === 'investigation') {
-    state.stage = 'interrogation';
-    state.currentNpc = null;
-    if (typeof render === 'function') render();
-  } else if (state.stage === 'interrogation') {
-    state.stage = 'deduction';
-    if (typeof render === 'function') render();
+    return Array.from(document.querySelectorAll('.primary-btn'));
+  }
+  if (state.stage === 'investigation') {
+    // 단서 카드 + 다음 단계 버튼
+    return Array.from(document.querySelectorAll('.scene-block .card, .primary-btn, .ghost-btn'));
+  }
+  if (state.stage === 'interrogation' && !state.currentNpc) {
+    return Array.from(document.querySelectorAll('.npc-card, .primary-btn, .ghost-btn'));
+  }
+  if (state.stage === 'interrogation' && state.currentNpc) {
+    return Array.from(document.querySelectorAll('.q-btn:not([disabled]), .ghost-btn'));
+  }
+  if (state.stage === 'deduction') {
+    return Array.from(document.querySelectorAll('.deduction-form select, .primary-btn, .ghost-btn'));
+  }
+  return [];
+}
+
+// 항목의 점자/음성용 라벨 추출
+function dotpadItemText(item) {
+  if (!item) return '';
+  // 카드형 (단서·NPC)
+  const title = item.querySelector('.card-title, .info .name');
+  const sub = item.querySelector('.card-sub, .info .role');
+  if (title) {
+    const t = title.textContent.trim();
+    const s = sub ? sub.textContent.trim() : '';
+    return s ? (t + ' — ' + s) : t;
+  }
+  // 질문 버튼
+  if (item.classList.contains('q-btn')) {
+    const lock = item.querySelector('.lock-note');
+    let txt = item.textContent;
+    if (lock) txt = txt.replace(lock.textContent, '');
+    return txt.replace(/^[✓\s]+/, '').trim();
+  }
+  // 일반 버튼
+  return item.textContent.trim().replace(/[▶▸◀✓]/g, '').trim();
+}
+
+function dotpadHighlight() {
+  document.querySelectorAll('.dotpad-focus').forEach(el => el.classList.remove('dotpad-focus'));
+  const items = dotpadCurrentItems();
+  if (!items.length) return;
+  if (state.dotpadCursor >= items.length) state.dotpadCursor = 0;
+  if (state.dotpadCursor < 0) state.dotpadCursor = items.length - 1;
+  const el = items[state.dotpadCursor];
+  if (el) {
+    el.classList.add('dotpad-focus');
+    try { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e){}
   }
 }
+
+function dotpadMove(dir) {
+  const items = dotpadCurrentItems();
+  if (!items.length) return;
+  state.dotpadCursor = (state.dotpadCursor + dir + items.length) % items.length;
+  dotpadHighlight();
+  // 점자 영역에 현재 cursor 항목 라벨 + 음성도 짧게 안내
+  const text = dotpadItemText(items[state.dotpadCursor]);
+  if (text) {
+    brailleSetText(text);
+    if (typeof speak === 'function') speak(text, { rate: 1.1 });
+  }
+}
+
+function dotpadSelect() {
+  const items = dotpadCurrentItems();
+  if (!items.length) return;
+  const el = items[state.dotpadCursor];
+  if (el) el.click();
+}
+
+function dotpadReplay() {
+  // 현재 화면의 첫 Aria 발화 + 점자 처음으로
+  const bubble = document.querySelector('.aria-bubble .text');
+  if (bubble) {
+    const text = (bubble.innerText || bubble.textContent || '').trim();
+    if (text) {
+      if (typeof speak === 'function') speak(text);
+      brailleSetText(text);
+    }
+  }
+}
+
+function dotpadBraillePage(dir) {
+  if (!state.braillePages.length) return;
+  state.brailleIdx = (state.brailleIdx + dir + state.braillePages.length) % state.braillePages.length;
+  showBraillePage();
+}
+
+function dotpadToggleNotes() {
+  if (document.querySelector('.notebook')) {
+    // 이미 노트 화면 → 닫기 (render로 복귀)
+    if (typeof render === 'function') render();
+    state.dotpadNotesOpen = false;
+  } else {
+    if (typeof showNotes === 'function') showNotes();
+    state.dotpadNotesOpen = true;
+  }
+}
+
+// 점자 영역 (20셀 = 40 hex chars)
+function showBraillePage() {
+  if (!state.braillePages.length || !window.DotPad || !state.dotpadConnected) return;
+  try {
+    window.DotPad.sdk.displayTextData(state.braillePages[state.brailleIdx]);
+  } catch(e) {}
+}
+
+function brailleSetText(text) {
+  if (!text || !state.dotpadConnected) { state.braillePages = []; return; }
+  const cleanText = String(text).replace(/\[(.*?)\]/g, '').trim();
+  const hex = textToBrailleHex(cleanText, state.lang);
+  state.braillePages = [];
+  if (!hex) return;
+  for (let i = 0; i < hex.length; i += 40) {
+    state.braillePages.push(hex.substring(i, i + 40).padEnd(40, '0'));
+  }
+  state.brailleIdx = 0;
+  showBraillePage();
+}
+
+// 영어 grade-1 점자 매핑 (dot pattern → 8-bit hex)
+const BRAILLE_EN_MAP = {
+  'a':'1','b':'12','c':'14','d':'145','e':'15','f':'124','g':'1245',
+  'h':'125','i':'24','j':'245','k':'13','l':'123','m':'134','n':'1345',
+  'o':'135','p':'1234','q':'12345','r':'1235','s':'234','t':'2345',
+  'u':'136','v':'1236','w':'2456','x':'1346','y':'13456','z':'1356',
+  ',':'2',';':'23',':':'25','.':'256','?':'236','!':'235',
+  "'":'3','-':'36','(':'2356',')':'2356','/':'34','"':'2356',
+  ' ':'0','\n':'0','\t':'0'
+};
+const BRAILLE_DIGIT_MAP = {
+  '1':'1','2':'12','3':'14','4':'145','5':'15','6':'124','7':'1245','8':'125','9':'24','0':'245'
+};
+function _dotsToHex(dots) {
+  let bits = 0;
+  for (const d of dots) {
+    if (d === '0' || !d) continue;
+    const n = parseInt(d, 10);
+    if (n >= 1 && n <= 8) bits |= (1 << (n - 1));
+  }
+  return bits.toString(16).padStart(2, '0').toUpperCase();
+}
+
+function textToBrailleHex(text, lang) {
+  if (!text) return '';
+  if (lang === 'ko') {
+    // 한국어 grade-1 점자는 자모 분해 + liblouis 필요. 첫 단계는 placeholder.
+    // 음성으로 보완. 일단 점자는 비움 (또는 영문 음역).
+    return '';
+  }
+  // 영어 grade-1
+  let hex = '';
+  let inNumber = false;
+  const lower = text.toLowerCase();
+  for (let i = 0; i < lower.length; i++) {
+    const ch = lower[i];
+    // 숫자
+    if (/[0-9]/.test(ch)) {
+      if (!inNumber) {
+        hex += _dotsToHex('3456'); // 숫자 prefix #
+        inNumber = true;
+      }
+      hex += _dotsToHex(BRAILLE_DIGIT_MAP[ch]);
+      continue;
+    } else if (inNumber && ch !== ' ') {
+      // 공백 외 글자가 오면 숫자 모드 종료
+      inNumber = false;
+    } else if (ch === ' ') {
+      // 공백은 숫자 모드 끊지 않음
+    }
+    // 대문자 prefix (lower이라 무시)
+    const dot = BRAILLE_EN_MAP[ch];
+    if (dot !== undefined) {
+      hex += _dotsToHex(dot);
+    } else {
+      // 알 수 없는 문자 — 공백 처리
+      hex += '00';
+    }
+  }
+  return hex;
+}
+
 
 
 function updateDotpadStatus() {
@@ -1984,8 +2100,6 @@ async function showOnDotpad(key) {
   if (!state.dotpadConnected || !dotpadAvailable()) return;
   const path = DTMS_MAP[key];
   if (!path) return;
-  _dotpadCurrentKey = key;
-  _dotpadPageIdx = 0;
   try {
     let dtms = _dtmsCache[path];
     if (!dtms) {
@@ -2290,15 +2404,37 @@ function ariaSay(text, options = {}) {
 // 단계별 화면
 // ============================================================
 function render() {
-  if (state.ended) return renderEnding();
-  if (state.stage === 'briefing') return renderBriefing();
-  if (state.stage === 'investigation') return renderInvestigation();
+  if (state.ended) { renderEnding(); dotpadOnRender(); return; }
+  if (state.stage === 'briefing') { renderBriefing(); dotpadOnRender(); return; }
+  if (state.stage === 'investigation') { renderInvestigation(); dotpadOnRender(); return; }
   if (state.stage === 'interrogation') {
-    if (state.currentNpc) return renderInterrogationDetail(state.currentNpc);
-    return renderInterrogationList();
+    if (state.currentNpc) renderInterrogationDetail(state.currentNpc);
+    else renderInterrogationList();
+    dotpadOnRender();
+    return;
   }
-  if (state.stage === 'deduction') return renderDeduction();
+  if (state.stage === 'deduction') { renderDeduction(); dotpadOnRender(); return; }
 }
+
+// 화면 그려진 후 cursor 리셋 + 첫 항목 highlight + Aria 텍스트 점자 출력
+function dotpadOnRender() {
+  if (!state.dotpadConnected) return;
+  setTimeout(() => {
+    state.dotpadCursor = 0;
+    dotpadHighlight();
+    // 화면 첫 Aria 발화 텍스트를 점자로
+    const bubble = document.querySelector('.aria-bubble .text');
+    if (bubble) {
+      const text = (bubble.innerText || bubble.textContent || '').trim();
+      if (text) brailleSetText(text);
+    } else {
+      // Aria 없으면 현재 cursor 항목 텍스트
+      const items = dotpadCurrentItems();
+      if (items[0]) brailleSetText(dotpadItemText(items[0]));
+    }
+  }, 50);
+}
+
 
 function renderBriefing() {
   showOnDotpad('splash');
@@ -2474,6 +2610,7 @@ async function askFree(npcId) {
 }
 
 function showNotes() {
+  state.dotpadNotesOpen = true;
   let html = renderHeader(T().stageCaseNotes, T().notesTitle, T().notesSub(state.discovered.size));
   html += `<div class="notebook"><div class="nb-title">${T().notesHeader}</div>`;
   if (state.discovered.size === 0) {
@@ -2486,8 +2623,9 @@ function showNotes() {
     html += `</ul>`;
   }
   html += `</div>
-    <button class="primary-btn" onclick="render()">${T().btnClose}</button>`;
+    <button class="primary-btn" onclick="state.dotpadNotesOpen=false;render()">${T().btnClose}</button>`;
   shell().innerHTML = html;
+  if (state.dotpadConnected) setTimeout(dotpadOnRender, 50);
 }
 
 function renderDeduction() {
