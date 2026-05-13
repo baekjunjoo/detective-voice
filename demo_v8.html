@@ -1010,22 +1010,22 @@
   </div>
   <div class="controls">
     <div class="dotpad-wrap">
-      <button class="lab-btn dotpad-btn" id="btn-dotpad" type="button">
+      <button class="lab-btn dotpad-btn" id="btn-dotpad" type="button" aria-label="Connect Dot Pad braille display" aria-haspopup="dialog">
         <span class="dot-led" id="dotpad-led"></span><span id="btn-dotpad-label">Dot Pad</span>
       </button>
-      <div class="dotpad-popup" id="dotpad-popup" hidden>
+      <div class="dotpad-popup" id="dotpad-popup" hidden role="dialog" aria-labelledby="dotpad-popup-title">
         <div class="dotpad-popup-title" id="dotpad-popup-title">Connect a Dot Pad</div>
         <div class="dotpad-popup-status" id="dotpad-popup-status"></div>
-        <button class="dotpad-popup-btn" id="dotpad-ble-btn" type="button">📶 Bluetooth</button>
-        <button class="dotpad-popup-btn" id="dotpad-usb-btn" type="button">🔗 USB</button>
-        <button class="dotpad-popup-btn dotpad-popup-danger" id="dotpad-disconnect-btn" type="button" hidden>Disconnect</button>
+        <button class="dotpad-popup-btn" id="dotpad-ble-btn" type="button" aria-label="Connect Dot Pad via Bluetooth">📶 Bluetooth</button>
+        <button class="dotpad-popup-btn" id="dotpad-usb-btn" type="button" aria-label="Connect Dot Pad via USB cable">🔗 USB</button>
+        <button class="dotpad-popup-btn dotpad-popup-danger" id="dotpad-disconnect-btn" type="button" hidden aria-label="Disconnect Dot Pad">Disconnect</button>
         <div class="dotpad-popup-hint" id="dotpad-popup-hint">Chrome/Edge desktop only · HTTPS required</div>
       </div>
     </div>
-    <button class="lab-btn" id="btn-lang">EN</button>
-    <button class="lab-btn" id="btn-bgm">BGM</button>
-    <button class="lab-btn" id="btn-tts">Voice</button>
-    <button class="lab-btn" id="btn-settings">Settings</button>
+    <button class="lab-btn" id="btn-lang" aria-label="Toggle language between English and Korean">EN</button>
+    <button class="lab-btn" id="btn-bgm" aria-label="Toggle background music" aria-pressed="false">BGM</button>
+    <button class="lab-btn" id="btn-tts" aria-label="Toggle voice playback" aria-pressed="true">Voice</button>
+    <button class="lab-btn" id="btn-settings" aria-label="Open settings — API keys and voice selection">Settings</button>
   </div>
 </div>
 
@@ -1033,7 +1033,7 @@
   <div class="island"></div>
   <div class="home-indicator"></div>
   <div class="screen">
-    <div class="status-bar">
+    <div class="status-bar" role="presentation" aria-hidden="true">
       <span id="clock">21:48</span>
       <span class="right">
         <svg viewBox="0 0 16 12"><rect x="0" y="9" width="2" height="3"/><rect x="3" y="6" width="2" height="6"/><rect x="6" y="3" width="2" height="9"/><rect x="9" y="0" width="2" height="12"/></svg>
@@ -1042,12 +1042,12 @@
       </span>
     </div>
 
-    <div class="splash" id="splash">
+    <div class="splash" id="splash" role="dialog" aria-labelledby="splash-title">
       <div class="splash-art" id="splash-art"></div>
       <div class="logo-mark">DETECTIVE VOICE</div>
       <div class="logo-title" id="splash-title">The Last Customer</div>
       <div class="logo-sub" id="splash-sub">Signature Case #1</div>
-      <button class="start" onclick="hideSplash()" id="splash-start">▶ Start</button>
+      <button class="start" onclick="hideSplash()" id="splash-start" aria-label="Start the case">▶ Start</button>
       <div class="signal" id="splash-signal">Don't look at the screen. Listen.</div>
     </div>
 
@@ -1056,7 +1056,7 @@
 </div>
 
 <!-- 설정 오버레이 -->
-<div class="overlay" id="overlay" style="display:none;">
+<div class="overlay" id="overlay" style="display:none;" role="dialog" aria-labelledby="setup-title" aria-modal="true">
   <div class="overlay-card">
     <h2 id="setup-title">SETUP — API Keys (optional)</h2>
     <p id="setup-desc">With keys, free-form typing (AI responses) and natural voice are enabled. Without keys, the demo runs in click-mode with system voice. Keys are stored only in this browser session.</p>
@@ -1365,32 +1365,32 @@ const SVG_DEFS = `
 // 장면 픽셀 아트
 // ============================================================
 const ART = {
-  splash: `<img src="img/splash.png" alt="안테나가 솟은 CRT 텔레비전 안에 사운드 웨이브가 흐르고 있어요. Detective Voice의 타이틀 이미지." class="pix-img" loading="lazy"/>`,
-  wine_bar: `<img src="img/wine_bar.png" alt="강남 와인바 루나의 사건 현장. 와인 보관대 앞 바닥에 사장이 쓰러져 있고 노란 폴리스 라인이 위쪽을 가로지르고 있어요." class="pix-img" loading="lazy"/>`,
-  alley: `<img src="img/alley.png" alt="비 내리는 한밤의 골목. 가로등이 노란 빛을 비추고 맞은편엔 24시간 편의점이 있어요." class="pix-img" loading="lazy"/>`,
-  morgue: `<img src="img/morgue.png" alt="국과수 부검실. 검안대 위 시신이 흰 시트에 덮여 있고 천장 형광등이 빛을 비춰요." class="pix-img" loading="lazy"/>`
+  splash: `<img src="img/splash.png" alt="" data-alt-key="splash" class="pix-img" loading="lazy"/>`,
+  wine_bar: `<img src="img/wine_bar.png" alt="" data-alt-key="wine_bar" class="pix-img" loading="lazy"/>`,
+  alley: `<img src="img/alley.png" alt="" data-alt-key="alley" class="pix-img" loading="lazy"/>`,
+  morgue: `<img src="img/morgue.png" alt="" data-alt-key="morgue" class="pix-img" loading="lazy"/>`
 };
 
 // ============================================================
 // 단서별 픽셀 아트 (NEW in v4)
 // ============================================================
 const EVIDENCE_ART = {
-  ev_broken_bottle: `<img src="img/ev_broken_bottle.png" alt="깨진 와인병 — 샤또 마고 2015 라벨이 반쯤 떨어져 있고 끝부분이 깨졌어요. 혈흔과 유리 조각이 흩어져 있어요." class="pix-img" loading="lazy"/>`,
-  ev_receipt_2342: `<img src="img/ev_receipt.png" alt="POS 영수증 — 23시 42분 18초에 박준영 카드로 샤또 마고 2015 결제. 시간이 노란색으로 강조되어 있어요." class="pix-img" loading="lazy"/>`,
-  ev_text_message: `<img src="img/ev_text.png" alt="휴대폰 메시지 — 김유진과의 대화. 마지막 메시지에 "준영이가 눈치챈 것 같아. 우리 정리하자"가 강조되어 있어요." class="pix-img" loading="lazy"/>`,
-  ev_wine_inventory: `<img src="img/ev_inventory.png" alt="와인 재고 장부 — 5월 7일 손글씨로 적힌 와인 목록. 샤또 마고 2015가 노란색 강조 라인에 X 표시되어 있어요." class="pix-img" loading="lazy"/>`,
-  ev_cctv_outside: `<img src="img/ev_cctv.png" alt="편의점 CCTV — 자정 15분에 루나 와인바에서 박준영이 나오는 모습이 잡혀 있어요. SUSPECT 빨간 화살표 표시." class="pix-img" loading="lazy"/>`,
-  ev_autopsy: `<img src="img/ev_autopsy.png" alt="부검 보고서 — 사인은 둔기에 의한 후두부 외상, 사망 시각 23시 30분에서 45분. CONFIRMED 빨간 도장." class="pix-img" loading="lazy"/>`
+  ev_broken_bottle: `<img src="img/ev_broken_bottle.png" alt="" data-alt-key="ev_broken_bottle" class="pix-img" loading="lazy"/>`,
+  ev_receipt_2342: `<img src="img/ev_receipt.png" alt="" data-alt-key="ev_receipt_2342" class="pix-img" loading="lazy"/>`,
+  ev_text_message: `<img src="img/ev_text.png" alt="" data-alt-key="ev_text_message"준영이가 눈치챈 것 같아. 우리 정리하자"가 강조되어 있어요." class="pix-img" loading="lazy"/>`,
+  ev_wine_inventory: `<img src="img/ev_inventory.png" alt="" data-alt-key="ev_wine_inventory" class="pix-img" loading="lazy"/>`,
+  ev_cctv_outside: `<img src="img/ev_cctv.png" alt="" data-alt-key="ev_cctv_outside" class="pix-img" loading="lazy"/>`,
+  ev_autopsy: `<img src="img/ev_autopsy.png" alt="" data-alt-key="ev_autopsy" class="pix-img" loading="lazy"/>`
 };
 
 // ============================================================
 // NPC 픽셀 포트레이트
 // ============================================================
 const PORTRAITS = {
-  park: `<img src="img/npc_park.png" alt="박준영, 45세 남성. 검은 정장에 노란 넥타이. 가는 눈, 다물린 입." class="pix-img" loading="lazy"/>`,
-  kim: `<img src="img/npc_kim.png" alt="김유진, 42세 여성. 긴 검은 머리, 눈물 흔적, 슬픈 표정. 노란 귀걸이와 목걸이." class="pix-img" loading="lazy"/>`,
-  lee: `<img src="img/npc_lee.png" alt="이민지, 29세 여성. 포니테일에 노란 묶음. 노란 앞치마에 "민지" 명찰. 친근한 미소." class="pix-img" loading="lazy"/>`,
-  choi: `<img src="img/npc_choi.png" alt="최동수, 55세 남성. B 로고 야구모자, 콧수염, 환한 미소. 체크 셔츠." class="pix-img" loading="lazy"/>`
+  park: `<img src="img/npc_park.png" alt="" data-alt-key="park" class="pix-img" loading="lazy"/>`,
+  kim: `<img src="img/npc_kim.png" alt="" data-alt-key="kim" class="pix-img" loading="lazy"/>`,
+  lee: `<img src="img/npc_lee.png" alt="" data-alt-key="lee"민지" 명찰. 친근한 미소." class="pix-img" loading="lazy"/>`,
+  choi: `<img src="img/npc_choi.png" alt="" data-alt-key="choi" class="pix-img" loading="lazy"/>`
 };
 
 // ============================================================
@@ -1694,6 +1694,7 @@ function updateStaticUI() {
   const voiceLabel = document.getElementById('setup-voice-label');
   if (voiceLabel) voiceLabel.textContent = state.lang === 'ko' ? '보이스' : 'VOICE';
   // select option들 (data-en, data-ko로 라벨 보존)
+  refreshAltText();
   // Dot Pad header + popup
   setIfExists('dotpad-popup-title', t.dotpadPopupTitle);
   setIfExists('dotpad-popup-hint', t.dotpadPopupHint);
@@ -1749,6 +1750,76 @@ let bgmNodes = null;
 // ============================================================
 // Dot Pad 통합 (Web SDK 3.0.0 + DTMS)
 // ============================================================
+
+
+// 이미지 alt 텍스트 i18n (lang에 따라 동적 갱신)
+const ALT_I18N = {
+  splash: {
+    ko: "안테나가 솟은 CRT 텔레비전 안에 사운드 웨이브가 흐르고 있어요. Detective Voice의 타이틀 이미지.",
+    en: "A CRT television with antennas, a sound waveform flowing on its screen. The Detective Voice title image."
+  },
+  wine_bar: {
+    ko: "강남 와인바 루나의 사건 현장. 와인 보관대 앞 바닥에 사장이 쓰러져 있고 노란 폴리스 라인이 위쪽을 가로지르고 있어요.",
+    en: "The Luna wine bar crime scene in Gangnam. The owner lies on the floor in front of a wine rack, with yellow police tape across the top of the frame."
+  },
+  alley: {
+    ko: "비 내리는 한밤의 골목. 가로등이 노란 빛을 비추고 맞은편엔 24시간 편의점이 있어요.",
+    en: "A midnight alley with rain falling. A street lamp casts amber light, with a 24-hour convenience store across the way."
+  },
+  morgue: {
+    ko: "국과수 부검실. 검안대 위 시신이 흰 시트에 덮여 있고 천장 형광등이 빛을 비춰요.",
+    en: "The National Forensic Service autopsy room. A body covered by a white sheet lies on the examination table, with a ceiling fluorescent light shining down."
+  },
+  ev_broken_bottle: {
+    ko: "깨진 와인병 — 샤또 마고 2015 라벨이 반쯤 떨어져 있고 끝부분이 깨졌어요. 혈흔과 유리 조각이 흩어져 있어요.",
+    en: "A broken wine bottle — the Château Margaux 2015 label is half torn off and the base is shattered. Blood stains and glass fragments are scattered around."
+  },
+  ev_receipt_2342: {
+    ko: "POS 영수증 — 11시 42분 18초에 박준영 카드로 샤또 마고 2015 결제. 시간이 노란색으로 강조되어 있어요.",
+    en: "A POS receipt — at 11:42:18 PM, charged to Park Jun-young's card for one Château Margaux 2015. The time is highlighted in amber."
+  },
+  ev_text_message: {
+    ko: "휴대폰 메시지 — 김유진과의 대화. 마지막 메시지에 '준영이가 눈치챈 것 같아. 우리 정리하자'가 강조되어 있어요.",
+    en: "A phone message — conversation with Kim Yu-jin. The last message reads 'I think Jun-young suspects. We have to end it' and is highlighted."
+  },
+  ev_wine_inventory: {
+    ko: "와인 재고 장부 — 5월 7일 손글씨로 적힌 와인 목록. 샤또 마고 2015가 노란색 강조 라인에 X 표시되어 있어요.",
+    en: "A handwritten wine inventory ledger dated May 7. The Château Margaux 2015 entry is highlighted in amber and marked with a red X."
+  },
+  ev_cctv_outside: {
+    ko: "편의점 CCTV — 자정 15분에 루나 와인바에서 박준영이 나오는 모습이 잡혀 있어요. SUSPECT 빨간 화살표 표시.",
+    en: "Convenience store CCTV — Park Jun-young is captured leaving the Luna wine bar at 12:15 AM. A red SUSPECT arrow points to him."
+  },
+  ev_autopsy: {
+    ko: "부검 보고서 — 사인은 둔기에 의한 후두부 외상, 사망 시각 11시 30분에서 11시 45분 사이. CONFIRMED 빨간 도장.",
+    en: "Autopsy report — cause of death is blunt force trauma to the back of the head, time of death between 11:30 PM and 11:45 PM. A red CONFIRMED stamp is visible."
+  },
+  park: {
+    ko: "박준영, 45세 남성. 검은 정장에 노란 넥타이. 가는 눈, 다물린 입.",
+    en: "Park Jun-young, a 45-year-old man. Black suit with an amber tie. Narrow eyes, closed mouth."
+  },
+  kim: {
+    ko: "김유진, 42세 여성. 긴 검은 머리, 눈물 흔적, 슬픈 표정. 노란 귀걸이와 목걸이.",
+    en: "Kim Yu-jin, a 42-year-old woman. Long black hair, tear tracks, sorrowful expression. Amber earrings and necklace."
+  },
+  lee: {
+    ko: "이민지, 29세 여성. 포니테일에 노란 묶음. 노란 앞치마에 '민지' 명찰. 친근한 미소.",
+    en: "Lee Min-ji, a 29-year-old woman. Ponytail with amber hair tie. Amber apron with a 'Min-ji' nametag. Friendly smile."
+  },
+  choi: {
+    ko: "최동수, 55세 남성. B 로고 야구모자, 콧수염, 환한 미소. 체크 셔츠.",
+    en: "Choi Dong-soo, a 55-year-old man. Baseball cap with a B logo, mustache, broad smile. Plaid shirt."
+  }
+};
+
+// 화면에 그려진 모든 img의 alt를 현재 lang에 맞춰 갱신
+function refreshAltText() {
+  document.querySelectorAll('img[data-alt-key]').forEach(img => {
+    const key = img.getAttribute('data-alt-key');
+    const t = ALT_I18N[key];
+    if (t) img.setAttribute('alt', (t[state.lang] || t.en || ''));
+  });
+}
 
 // 게임 이벤트 → dtms 파일 매핑
 const DTMS_MAP = {
@@ -1964,12 +2035,9 @@ function dotpadMove(dir) {
   if (!items.length) return;
   state.dotpadCursor = (state.dotpadCursor + dir + items.length) % items.length;
   dotpadHighlight();
-  // 점자 영역에 현재 cursor 항목 라벨 + 음성도 짧게 안내
+  // 점자 영역만 갱신 (음성 중첩 방지 — 자동재생 중인 Aria 발화를 끊지 않음)
   const text = dotpadItemText(items[state.dotpadCursor]);
-  if (text) {
-    brailleSetText(text);
-    if (typeof speak === 'function') speak(text, { rate: 1.1 });
-  }
+  if (text) brailleSetText(text);
 }
 
 function dotpadSelect() {
@@ -2292,6 +2360,11 @@ function textToSsml(text, voice) {
   for (let i = 0; i < opens - closes; i++) processed += '</prosody>';
   // 마침표/물음표/느낌표 뒤에 짧은 호흡
   processed = processed.replace(/([.?!])\s/g, '$1 <break time="200ms"/> ');
+  // 시간 표기 (HH:MM 또는 HH:MM AM/PM) — 영어 lang일 때 say-as로 명확히
+  if (xmlLang && xmlLang.startsWith('en-')) {
+    processed = processed.replace(/\b(\d{1,2}):(\d{2})(\s*(?:AM|PM|am|pm))?\b/g,
+      (m, h, mm, ap) => `<say-as interpret-as="time" format="hms12">${h}:${mm}${ap||''}</say-as>`);
+  }
   // voice prefix 기반 xml:lang 결정 (lang 설정과 voice가 mismatch여도 voice 따라감)
   const voiceName = voice || state.azureVoice || '';
   let xmlLang = 'en-US';
@@ -2468,6 +2541,7 @@ function ariaSay(text, options = {}) {
 // 단계별 화면
 // ============================================================
 function render() {
+  setTimeout(refreshAltText, 10);
   if (state.ended) { renderEnding(); dotpadOnRender(); return; }
   if (state.stage === 'briefing') { renderBriefing(); dotpadOnRender(); return; }
   if (state.stage === 'investigation') { renderInvestigation(); dotpadOnRender(); return; }
@@ -2480,7 +2554,7 @@ function render() {
   if (state.stage === 'deduction') { renderDeduction(); dotpadOnRender(); return; }
 }
 
-// 화면 그려진 후 cursor 리셋 + 첫 항목 highlight + Aria 텍스트 점자 출력
+// 화면 그려진 후 alt 갱신 + cursor 리셋 + 첫 항목 highlight + Aria 텍스트 점자 출력
 function dotpadOnRender() {
   if (!state.dotpadConnected) return;
   setTimeout(syncDotpadToScreen, 50);
@@ -2488,6 +2562,7 @@ function dotpadOnRender() {
 
 // 현재 보이는 화면 상태에 맞춰 dtms·점자·cursor 한 번에 갱신
 function syncDotpadToScreen() {
+  refreshAltText();
   if (!state.dotpadConnected) return;
   const splashEl = document.getElementById('splash');
   const splashVisible = splashEl && !splashEl.classList.contains('hidden');
@@ -2891,11 +2966,13 @@ document.getElementById('btn-bgm').addEventListener('click', () => {
   state.bgmOn = !state.bgmOn;
   if (state.bgmOn) { ensureAudio(); startBGM(); } else stopBGM();
   document.getElementById('btn-bgm').classList.toggle('active', state.bgmOn);
+  document.getElementById('btn-bgm').setAttribute('aria-pressed', String(state.bgmOn));
 });
 document.getElementById('btn-tts').addEventListener('click', () => {
   state.ttsOn = !state.ttsOn;
   if (!state.ttsOn) stopSpeaking();
   document.getElementById('btn-tts').classList.toggle('active', state.ttsOn);
+  document.getElementById('btn-tts').setAttribute('aria-pressed', String(state.ttsOn));
 });
 
 // Dot Pad 헤더 버튼 & popup 이벤트
