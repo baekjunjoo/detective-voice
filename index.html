@@ -6,6 +6,34 @@
 <title>Detective Voice — The Last Customer</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+<!-- liblouis WASM (점자 변환 엔진) — 영어 grade-2 + 한국어 -->
+<script>
+  window.LiblouisReady = false;
+  window._liblouisLoadError = null;
+</script>
+<script src="liblouis/build-no-tables-utf16.js" onerror="window._liblouisLoadError='build'"></script>
+<script src="liblouis/easy-api.js" onerror="window._liblouisLoadError='easy-api'"></script>
+<script>
+  (function() {
+    if (!window.liblouis || !window.liblouisBuild) {
+      console.warn('[liblouis] build or easy-api failed to load — falling back to grade-1 mapping');
+      return;
+    }
+    try {
+      // easy-api는 window.liblouis로 사용 (그리고 setLiblouisBuild 필요 없음 — 자동 감지)
+      // 첫 호출 시 테이블 lazy load
+      window.liblouis.enableOnDemandTableLoading('liblouis/tables/');
+      window.LiblouisReady = true;
+      window.dispatchEvent(new Event('liblouis-ready'));
+      console.log('[liblouis] ready · version:', window.liblouis.version());
+    } catch (e) {
+      console.warn('[liblouis] init failed:', e);
+      window._liblouisLoadError = e.message;
+    }
+  })();
+</script>
+
 <style>
   :root {
     --bg: #000;
@@ -1741,6 +1769,13 @@ const state = {
 };
 L().npcs.forEach(n => { state.npcAnxiety[n.id] = n.anxietyStart; state.npcMessages[n.id] = []; });
 
+// liblouis 로드 완료 후 현재 화면 점자 자동 갱신
+window.addEventListener('liblouis-ready', () => {
+  if (state.dotpadConnected && typeof syncDotpadToScreen === 'function') {
+    setTimeout(syncDotpadToScreen, 100);
+  }
+});
+
 // ============================================================
 // BGM (그대로)
 // ============================================================
@@ -2153,13 +2188,45 @@ function _dotsToHex(dots) {
   return bits.toString(16).padStart(2, '0').toUpperCase();
 }
 
+// 점자 유니코드 문자열 → 8-bit hex
+function brailleUnicodeToHex(s) {
+  let hex = '';
+  for (const c of s) {
+    const code = c.codePointAt(0);
+    if (code >= 0x2800 && code <= 0x28FF) {
+      const dots = code - 0x2800; // 0~255, 각 bit가 dot 1~8
+      hex += dots.toString(16).padStart(2, '0').toUpperCase();
+    } else if (c === ' ') {
+      hex += '00';
+    }
+    // 그 외 문자는 무시
+  }
+  return hex;
+}
+
+// liblouis로 텍스트 → 점자 hex (grade-2)
+function _liblouisToHex(text, lang) {
+  if (!window.LiblouisReady || !window.liblouis) return null;
+  try {
+    // 영어 grade-2: en-us-g2.ctb (Unified English Braille)
+    // 한국어 grade-2: ko-g2.ctb (의존 테이블 자동 로드)
+    const table = (lang === 'ko') ? 'ko-g2.ctb' : 'en-us-g2.ctb';
+    const brl = window.liblouis.translateString(table, text);
+    if (!brl) return null;
+    return brailleUnicodeToHex(brl);
+  } catch (e) {
+    console.warn('[liblouis] translate failed:', e.message || e);
+    return null;
+  }
+}
+
 function textToBrailleHex(text, lang) {
   if (!text) return '';
-  if (lang === 'ko') {
-    // 한국어 grade-1 점자는 자모 분해 + liblouis 필요. 첫 단계는 placeholder.
-    // 음성으로 보완. 일단 점자는 비움 (또는 영문 음역).
-    return '';
-  }
+  // 1순위 — liblouis grade-2 (영어·한국어 정식 점자)
+  const lou = _liblouisToHex(text, lang);
+  if (lou !== null) return lou;
+  // 2순위 — 한국어는 fallback 없음 (점자 비움)
+  if (lang === 'ko') return '';
   // 영어 grade-1
   let hex = '';
   let inNumber = false;
