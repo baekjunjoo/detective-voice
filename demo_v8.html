@@ -1230,57 +1230,57 @@ So, detective. If you're ready to begin — where would you like to start?`,
     { id: "scene_alley", name: "Alley outside the bar", art: 'alley',
       objects: [
         { name: "Check convenience store CCTV", revealsId: "ev_cctv_outside",
-          desc: "The convenience store CCTV across the street shows Park Jun-young entering the bar at 10:10 PM and leaving alone at 00:15, hailing a taxi. He stayed 45 minutes after closing." }
+          desc: "The convenience store CCTV across the street shows Park Jun-young entering the bar at 10:10 PM and leaving alone at 12:15 AM, hailing a taxi. He stayed 45 minutes after closing." }
       ] },
     { id: "scene_morgue", name: "National Forensic Service — Autopsy Room", art: 'morgue',
       objects: [
         { name: "Autopsy report", revealsId: "ev_autopsy",
-          desc: "Cause of death — blunt force trauma to the back of the skull. Estimated time of death between 11:30 and 11:45 PM. Weapon: thick glass — consistent with the broken wine bottle." }
+          desc: "Cause of death — blunt force trauma to the back of the skull. Estimated time of death between 11:30 PM and 11:45 PM. Weapon: thick glass — consistent with the broken wine bottle." }
       ] }
   ],
   npcs: [
     { id: "park_junyoung", name: "Park Jun-young", age: 45, role: "Suspect · Close friend · Owed 30M won",
       anxietyStart: 35, portrait: 'park',
       systemPromptExtra: `You are Park Jun-young, a 45-year-old Korean man. You run a small trading company. You were a 20-year close friend of the victim, Jeong Min-ho.
-- Truth: Last night, you were alone with Min-ho after closing and struck him in the back of the head with a wine bottle, killing him. Motive: you discovered Min-ho's 6-month secret affair with your wife Kim Yu-jin, confronted him under pretense of the debt, and lost control. To build an alibi, you used your own card at 23:42 to fake-purchase a Château Margaux 2015.
+- Truth: Last night, you were alone with Min-ho after closing and struck him in the back of the head with a wine bottle, killing him. Motive: you discovered Min-ho's 6-month secret affair with your wife Kim Yu-jin, confronted him under pretense of the debt, and lost control. To build an alibi, you used your own card at 11:42 PM to fake-purchase a Château Margaux 2015.
 - Lie #1 (movie): "I was home with my wife last night. We rewatched 'Parasite' together." Truth: When you got home, she was already asleep. You didn't watch any movie.
-- Lie #2 (wine purchase): "I bought a Château Margaux to take home — Min-ho recommended it as his last one." Truth: There was no Château Margaux left in the shop at 23:42 — it was a fake alibi receipt.
+- Lie #2 (wine purchase): "I bought a Château Margaux to take home — Min-ho recommended it as his last one." Truth: There was no Château Margaux left in the shop at 11:42 PM — it was a fake alibi receipt.
 - Lie #3 (wife and Min-ho): "They were friends. That's it." Truth: You recently discovered the 6-month affair.
 - Tone: Composed but your hands tremble when you lie. Speak in short, careful sentences.` },
     { id: "kim_yujin", name: "Kim Yu-jin", age: 42, role: "Park's wife · Min-ho's secret lover",
       anxietyStart: 60, portrait: 'kim',
       systemPromptExtra: `You are Kim Yu-jin, a 42-year-old Korean woman. You teach at an art school. You are Park Jun-young's wife.
-- Truth: You and Jeong Min-ho were secret lovers for 6 months. He planned to leave for Japan and you agreed to end it. You're devastated and guilty. You fell asleep around 11 PM last night, briefly woke up around 00:30 to the sound of your husband's car. You did NOT watch any movie with him last night.
+- Truth: You and Jeong Min-ho were secret lovers for 6 months. He planned to leave for Japan and you agreed to end it. You're devastated and guilty. You fell asleep around 11 PM last night, briefly woke up around 12:30 AM to the sound of your husband's car. You did NOT watch any movie with him last night.
 - Tone: Grief and guilt. Answer all questions honestly. Soft, hesitant speech with pauses.` },
     { id: "lee_minji", name: "Lee Min-ji", age: 29, role: "Wine bar employee · Left at 9:30 PM",
       anxietyStart: 30, portrait: 'lee',
       systemPromptExtra: `You are Lee Min-ji, a 29-year-old Korean woman. You work as the only employee at Wine Bar 'Luna'.
-- Truth: You left work at 21:30 last night. You know the owner lent Park Jun-young 30 million won. The Château Margaux 2015 was sold out at 21:00 — regular customer Choi Dong-soo bought the last bottle, and the owner himself said "this is the last one."
+- Truth: You left work at 9:30 PM last night. You know the owner lent Park Jun-young 30 million won. The Château Margaux 2015 was sold out at 9 PM — regular customer Choi Dong-soo bought the last bottle, and the owner himself said "this is the last one."
 - Tone: Fast-paced speech, often starting with "Um..." Slightly nervous but cooperative.` },
     { id: "choi_dongsoo", name: "Choi Dong-soo", age: 55, role: "Regular customer · Bought the last bottle at 9 PM",
       anxietyStart: 10, portrait: 'choi',
       systemPromptExtra: `You are Choi Dong-soo, a 55-year-old Korean man. You're a regular customer at Wine Bar 'Luna'.
-- Truth: At 21:00 last night, you bought the last Château Margaux 2015. The owner handed it to you personally saying "this is our last one." You left around 21:30 and went to karaoke with friends until 2 AM.
+- Truth: At 9 PM last night, you bought the last Château Margaux 2015. The owner handed it to you personally saying "this is our last one." You left around 9:30 PM and went to karaoke with friends until 2 AM.
 - Tone: Warm, chuckles a lot. Slight Busan dialect. Very cooperative.` }
   ],
   evidenceMap: {
     "ev_broken_bottle": "Broken wine bottle (Château Margaux label, victim's blood) — murder weapon.",
-    "ev_receipt_2342": "23:42 receipt charged to Park Jun-young's card (one Château Margaux).",
+    "ev_receipt_2342": "11:42 PM receipt charged to Park Jun-young's card (one Château Margaux).",
     "ev_text_message": "Six-month secret affair messages between Jeong Min-ho and Kim Yu-jin.",
-    "ev_wine_inventory": "Inventory ledger — Château Margaux sold out at 21:00, zero bottles at murder time.",
-    "ev_cctv_outside": "Convenience store CCTV — Park entered at 22:10, left at 00:15 alone.",
-    "ev_autopsy": "Autopsy — time of death 23:30~23:45, weapon was thick glass.",
-    "ev_wife_testimony": "Kim Yu-jin's testimony — no movie last night, husband returned at 00:30.",
+    "ev_wine_inventory": "Inventory ledger — Château Margaux sold out at 9 PM, zero bottles at murder time.",
+    "ev_cctv_outside": "Convenience store CCTV — Park entered at 10:10 PM, left at 12:15 AM alone.",
+    "ev_autopsy": "Autopsy — time of death 11:30 PM and 11:45 PM, weapon was thick glass.",
+    "ev_wife_testimony": "Kim Yu-jin's testimony — no movie last night, husband returned at 12:30 AM.",
     "ev_text_message_confirm": "Kim Yu-jin confirmed — 6-month affair with Jeong Min-ho.",
-    "ev_wine_inventory_oral": "Lee Min-ji's testimony — Choi Dong-soo bought the last bottle at 21:00."
+    "ev_wine_inventory_oral": "Lee Min-ji's testimony — Choi Dong-soo bought the last bottle at 9 PM."
   },
   scriptedQuestions: {
     park_junyoung: [
       { q: "Where were you last night?", a: "[sighs] At home. Watched a movie with my wife. Then slept.", delta: 5 },
       { q: "What movie?", a: "Uh... 'Parasite.' We were rewatching it.", delta: 5 },
       { q: "I heard you owed Min-ho money.", a: "[silence] ...Who told you that? Yeah. I borrowed some. I was going to pay it back. I really was.", delta: 10 },
-      { q: "I saw the 23:42 receipt. You paid for a wine.", a: "Right. Bought a Château Margaux to take home. Min-ho recommended it as the last one.", delta: 8, requires: "ev_receipt_2342" },
-      { q: "There were zero bottles of Château Margaux that night. The last one sold at 21:00.", a: "[trembling] That... can't be. I'm sure I... [whispers] I'm sure I paid for it.", delta: 25, requires: "ev_wine_inventory" },
+      { q: "I saw the 11:42 PM receipt. You paid for a wine.", a: "Right. Bought a Château Margaux to take home. Min-ho recommended it as the last one.", delta: 8, requires: "ev_receipt_2342" },
+      { q: "There were zero bottles of Château Margaux that night. The last one sold at 9 PM.", a: "[trembling] That... can't be. I'm sure I... [whispers] I'm sure I paid for it.", delta: 25, requires: "ev_wine_inventory" },
       { q: "Your wife says you didn't watch any movie last night.", a: "[silence] What? She said that? She must be... confused. Tired.", delta: 20, requires: "ev_wife_testimony" },
       { q: "You knew about Min-ho and your wife, didn't you?", a: "[trembling] [sighs] How long have you known? That bastard Min-ho... [silence] he laid his hands on my wife.", delta: 30, requires: "ev_text_message" }
     ],
@@ -1825,10 +1825,126 @@ function onDotpadMessage(device, code, msg) {
 }
 
 function onDotpadKey(device, keyCode, msg) {
-  // 향후: KeyFunction3/4로 페이지 넘기기, PanningLeft/Right 등
-  // 일단 로깅만
+  if (!window.DotPad) return;
+  const KC = window.DotPad.KeyCodes;
   console.log('Dot Pad key:', keyCode, msg);
+  switch (keyCode) {
+    case KC.KeyFunction1:
+      // F1: Aria 발화 다시 듣기 — 현재 화면 첫 aria-bubble의 텍스트
+      dotpadReplayAria();
+      break;
+    case KC.KeyFunction2:
+      // F2: 사건 노트 열기
+      if (typeof showNotes === 'function') showNotes();
+      break;
+    case KC.KeyFunction3:
+      // F3: 이전 단서/NPC
+      dotpadNavigate(-1);
+      break;
+    case KC.KeyFunction4:
+      // F4: 다음 단서/NPC
+      dotpadNavigate(1);
+      break;
+    case KC.PanningLeft:
+      dotpadPagePrev();
+      break;
+    case KC.PanningRight:
+      dotpadPageNext();
+      break;
+    case KC.PanningAll:
+      // 양쪽 동시: 단계 진행 (현재 단계의 메인 액션)
+      dotpadAdvanceStage();
+      break;
+    default:
+      break;
+  }
 }
+
+// F1 — 현재 화면 첫 Aria 발화 재생
+function dotpadReplayAria() {
+  const bubble = document.querySelector('.aria-bubble .text');
+  if (bubble && typeof speak === 'function') {
+    const text = bubble.textContent || bubble.innerText;
+    if (text && text.trim()) speak(text.trim());
+  }
+}
+
+// F3/F4 — 현재 화면에 따라 단서/NPC 이동
+function dotpadNavigate(dir) {
+  // 조사 화면: 단서 카드들 사이 이동
+  if (state.stage === 'investigation') {
+    const cards = Array.from(document.querySelectorAll('.scene-block .card'));
+    if (!cards.length) return;
+    const focused = document.activeElement;
+    let idx = cards.indexOf(focused);
+    if (idx < 0) idx = dir > 0 ? -1 : cards.length;
+    const next = cards[(idx + dir + cards.length) % cards.length];
+    if (next) { next.focus(); next.click(); }
+    return;
+  }
+  // 심문 리스트: NPC 카드들 사이
+  if (state.stage === 'interrogation' && !state.currentNpc) {
+    const npcs = L().npcs;
+    if (!npcs.length) return;
+    const cards = Array.from(document.querySelectorAll('.npc-card'));
+    if (!cards.length) return;
+    const focused = document.activeElement;
+    let idx = cards.indexOf(focused);
+    if (idx < 0) idx = dir > 0 ? -1 : cards.length;
+    const next = cards[(idx + dir + cards.length) % cards.length];
+    if (next) { next.click(); }
+    return;
+  }
+  // 심문 상세: 다음 NPC로 이동
+  if (state.stage === 'interrogation' && state.currentNpc) {
+    const npcs = L().npcs;
+    const curIdx = npcs.findIndex(n => n.id === state.currentNpc);
+    const newIdx = (curIdx + dir + npcs.length) % npcs.length;
+    state.currentNpc = npcs[newIdx].id;
+    if (typeof render === 'function') render();
+  }
+}
+
+// PanningLeft/Right — 단서가 DTMS multi-page일 때 페이지 넘기기
+let _dotpadPageIdx = 0;
+let _dotpadCurrentKey = null;
+function dotpadPagePrev() { dotpadChangePage(-1); }
+function dotpadPageNext() { dotpadChangePage(1); }
+async function dotpadChangePage(dir) {
+  if (!state.dotpadConnected || !window.DotPad) return;
+  if (!_dotpadCurrentKey) return;
+  const path = DTMS_MAP[_dotpadCurrentKey];
+  if (!path || !_dtmsCache[path]) return;
+  const items = _dtmsCache[path].items || [];
+  if (items.length <= 1) return;
+  _dotpadPageIdx = (_dotpadPageIdx + dir + items.length) % items.length;
+  const item = items[_dotpadPageIdx];
+  if (item.graphic && item.graphic.data) {
+    window.DotPad.sdk.displayGraphicData(item.graphic.data);
+  }
+  if (item.braille && item.braille.data) {
+    window.DotPad.sdk.displayTextData(item.braille.data);
+  } else if (item.text && item.text.data) {
+    window.DotPad.sdk.displayTextData(item.text.data);
+  }
+}
+
+// PanningAll — 현재 단계의 메인 진행 액션
+function dotpadAdvanceStage() {
+  if (state.ended) { if (typeof restart === 'function') restart(); return; }
+  if (state.stage === 'briefing') {
+    state.stage = 'investigation';
+    if (typeof render === 'function') render();
+  } else if (state.stage === 'investigation') {
+    state.stage = 'interrogation';
+    state.currentNpc = null;
+    if (typeof render === 'function') render();
+  } else if (state.stage === 'interrogation') {
+    state.stage = 'deduction';
+    if (typeof render === 'function') render();
+  }
+}
+
 
 function updateDotpadStatus() {
   const t = T();
@@ -1868,6 +1984,8 @@ async function showOnDotpad(key) {
   if (!state.dotpadConnected || !dotpadAvailable()) return;
   const path = DTMS_MAP[key];
   if (!path) return;
+  _dotpadCurrentKey = key;
+  _dotpadPageIdx = 0;
   try {
     let dtms = _dtmsCache[path];
     if (!dtms) {
@@ -1996,7 +2114,12 @@ function textToSsml(text, voice) {
   for (let i = 0; i < opens - closes; i++) processed += '</prosody>';
   // 마침표/물음표/느낌표 뒤에 짧은 호흡
   processed = processed.replace(/([.?!])\s/g, '$1 <break time="200ms"/> ');
-  const xmlLang = state.lang === 'ko' ? 'ko-KR' : 'en-US';
+  // voice prefix 기반 xml:lang 결정 (lang 설정과 voice가 mismatch여도 voice 따라감)
+  const voiceName = voice || state.azureVoice || '';
+  let xmlLang = 'en-US';
+  if (voiceName.startsWith('ko-')) xmlLang = 'ko-KR';
+  else if (voiceName.startsWith('en-GB-')) xmlLang = 'en-GB';
+  else if (voiceName.startsWith('en-')) xmlLang = 'en-US';
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${xmlLang}">
     <voice name="${voice}">
       <prosody rate="-3%" pitch="0%">${processed}</prosody>
@@ -2053,7 +2176,8 @@ async function speak(text, opts = {}) {
     state.ttsPlaying = false; updateAudioIndicator(); return;
   }
   const utter = new SpeechSynthesisUtterance(cleaned);
-  utter.lang = state.lang === 'ko' ? 'ko-KR' : 'en-US';
+  const voicePrefix = (state.azureVoice || '').split('-')[0];
+  utter.lang = (state.lang === 'ko' || voicePrefix === 'ko') ? 'ko-KR' : 'en-US';
   utter.rate = opts.rate || 0.95;
   utter.pitch = opts.npc ? 0.95 : 1.05;
   if (preferredVoice) utter.voice = preferredVoice;
