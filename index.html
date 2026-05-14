@@ -1663,13 +1663,24 @@ function T() { return UI_TEXT[state.lang] || UI_TEXT.en; }
 // ============================================================
 // 언어 토글
 // ============================================================
+// 각 언어의 권장 (가장 자연스러운) Azure Neural voice
+const RECOMMENDED_VOICE = {
+  ko: 'ko-KR-SunHiNeural',  // 따뜻한 한국어 여성, Aria 캐릭터에 가장 잘 맞음
+  en: 'en-US-AriaNeural'    // 같은 이름의 영어 신경망 보이스 — 캐릭터 일치
+};
+
 function setLang(lang) {
+  const langChanged = state.lang !== lang;
   state.lang = lang;
-  // Azure voice 자동 선택 (현재 voice가 다른 언어 prefix면 교체)
-  if (lang === 'ko' && !state.azureVoice.startsWith('ko-')) {
-    state.azureVoice = 'ko-KR-SunHiNeural';
-  } else if (lang === 'en' && !state.azureVoice.startsWith('en-')) {
-    state.azureVoice = 'en-US-AriaNeural';
+  // 언어 변경 시 권장 voice로 강제 전환 (사용자가 SETUP에서 명시적으로 선택한 voice는 유지)
+  // localStorage에 voice가 저장되지 않은 경우엔 자동으로 권장 voice 사용
+  let savedVoice = null;
+  try { savedVoice = localStorage.getItem('dv_az_voice'); } catch(e) {}
+  if (langChanged || !savedVoice) {
+    state.azureVoice = RECOMMENDED_VOICE[lang] || 'en-US-AriaNeural';
+    // SETUP 모달의 voice select도 동기화
+    const vsel = document.getElementById('az-voice');
+    if (vsel) vsel.value = state.azureVoice;
   }
   // UI 텍스트 업데이트
   updateStaticUI();
@@ -1681,7 +1692,7 @@ function setLang(lang) {
   // 토글 버튼 라벨
   const btn = document.getElementById('btn-lang');
   if (btn) btn.textContent = lang === 'ko' ? 'KO' : 'EN';
-  try { sessionStorage.setItem('dv_lang', lang); } catch(e) {}
+  try { localStorage.setItem('dv_lang', lang); } catch(e) {}
 }
 function toggleLang() {
   setLang(state.lang === 'ko' ? 'en' : 'ko');
@@ -1758,6 +1769,8 @@ const state = {
   currentNpc: null,
   npcMessages: {},
   anthKey: null,
+  // Azure Speech 키 — 사용자가 한 번 SETUP에서 입력하면 localStorage에 영구 저장
+  // (깃헙 공개 저장소라 코드에 직접 박지 않음 — Push Protection 차단)
   azureKey: null,
   azureRegion: 'koreacentral',
   azureVoice: 'en-US-AriaNeural',
@@ -2982,9 +2995,7 @@ function hideSplash() {
   _clearDotpadFocus();
   // Dot Pad 연결되어 있으면 브리핑 화면 sync
   if (state.dotpadConnected) setTimeout(syncDotpadToScreen, 100);
-  if (!state.azureKey && !state.anthKey && !sessionStorage.getItem('dv_skipped_setup')) {
-    document.getElementById('overlay').style.display = 'flex';
-  }
+  // 설정 모달은 사용자가 헤더 Settings 버튼 누를 때만 표시 (자동 표시 제거)
 }
 
 function saveSettings() {
@@ -2998,16 +3009,16 @@ function saveSettings() {
   if (aKey) {
     state.anthKey = aKey;
     state.aiMode = true;
-    try { sessionStorage.setItem('dv_anth_key', aKey); } catch(e){}
+    try { localStorage.setItem('dv_anth_key', aKey); } catch(e){}
   }
   if (azKey) {
     state.azureKey = azKey;
     state.azureRegion = azReg;
     state.azureVoice = azVoice;
     try {
-      sessionStorage.setItem('dv_az_key', azKey);
-      sessionStorage.setItem('dv_az_region', azReg);
-      sessionStorage.setItem('dv_az_voice', azVoice);
+      localStorage.setItem('dv_az_key', azKey);
+      localStorage.setItem('dv_az_region', azReg);
+      localStorage.setItem('dv_az_voice', azVoice);
     } catch(e){}
   }
 
@@ -3020,7 +3031,7 @@ function saveSettings() {
 }
 
 function skipSettings() {
-  sessionStorage.setItem('dv_skipped_setup', '1');
+  localStorage.setItem('dv_skipped_setup', '1');
   document.getElementById('overlay').style.display = 'none';
   if (!state.bgmOn) {
     state.bgmOn = true;
@@ -3068,19 +3079,23 @@ document.getElementById('btn-tts').classList.add('active');
 
 // 세션 캐시 복원
 try {
-  const savedLang = sessionStorage.getItem('dv_lang');
+  const savedLang = localStorage.getItem('dv_lang');
   if (savedLang === 'ko' || savedLang === 'en') {
     state.lang = savedLang;
-    state.azureVoice = savedLang === 'ko' ? 'ko-KR-SunHiNeural' : 'en-US-AriaNeural';
+    state.azureVoice = RECOMMENDED_VOICE[savedLang];
   }
-  const a = sessionStorage.getItem('dv_anth_key');
-  const az = sessionStorage.getItem('dv_az_key');
-  const azr = sessionStorage.getItem('dv_az_region');
-  const azv = sessionStorage.getItem('dv_az_voice');
+  const a = localStorage.getItem('dv_anth_key');
+  const az = localStorage.getItem('dv_az_key');
+  const azr = localStorage.getItem('dv_az_region');
+  const azv = localStorage.getItem('dv_az_voice');
   if (a) { state.anthKey = a; state.aiMode = true; document.getElementById('anth-key').value = a; }
-  if (az) { state.azureKey = az; document.getElementById('az-key').value = az; }
-  if (azr) { state.azureRegion = azr; document.getElementById('az-region').value = azr; }
-  if (azv) { state.azureVoice = azv; document.getElementById('az-voice').value = azv; }
+  if (az) { state.azureKey = az; }
+  if (azr) { state.azureRegion = azr; }
+  if (azv) { state.azureVoice = azv; }
+  // SETUP 모달에 현재 값 표시 (기본 키도 보임)
+  document.getElementById('az-key').value = state.azureKey || '';
+  document.getElementById('az-region').value = state.azureRegion;
+  document.getElementById('az-voice').value = state.azureVoice;
 } catch(e) {}
 
 document.getElementById('splash-art').innerHTML = ART.splash;
