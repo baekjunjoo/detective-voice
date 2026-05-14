@@ -1460,7 +1460,7 @@ const UI_TEXT = {
     caseClosedTitle: '사건 종결',
     // Aria 발화
     ariaInvStart: '현장은 그대로예요. 어디부터 시작할까요?',
-    ariaInvContinue: '단서가 모이고 있어요. 다른 곳도 살펴보거나 인물을 만나보시겠어요?',
+    ariaInvContinue: '다음으로 어디 갈까요?',
     ariaInter: '증인과 용의자 네 명이에요. 한 명씩 만나서 모순을 찾아내세요.',
     ariaDed: '자, 누가 했다고 생각하시나요? 범인과 동기, 그리고 그걸 뒷받침하는 핵심 증거 세 가지를 골라주세요.',
     // 버튼
@@ -1576,7 +1576,7 @@ const UI_TEXT = {
     notesSub: (n) => `${n} of 9 possible`,
     caseClosedTitle: 'Case closed',
     ariaInvStart: "The scene is untouched. Where would you like to begin?",
-    ariaInvContinue: "The clues are coming together. Examine more locations, or interview the witnesses?",
+    ariaInvContinue: "Where to next?",
     ariaInter: "Four witnesses and suspects. Talk to each one and find the contradictions.",
     ariaDed: "So. Who do you think did it? Choose the culprit, the motive, and three pieces of evidence to back it up.",
     btnStartCase: '▶ Begin Case',
@@ -2607,9 +2607,10 @@ function renderHeader(stage, title, sub) {
 }
 
 function ariaSay(text, options = {}) {
+  // 50ms — user gesture 컨텍스트 보존하면서 DOM 그려진 직후 발화
   setTimeout(() => {
     if (state.ttsOn && options.autoSpeak !== false) speak(text);
-  }, 300);
+  }, 50);
   return `<div class="aria-bubble">
     <div class="label"><span class="pulse"></span>ARIA</div>
     <div class="text">${text.replace(/\n/g, '<br/>')}</div>
@@ -2989,7 +2990,31 @@ function tickClock() {
 setInterval(tickClock, 30000);
 tickClock();
 
+// audio autoplay 정책 우회 — splash Start 클릭(사용자 제스처) 안에서 dummy audio 한 번 재생
+// 이후 Azure TTS fetch+play가 user gesture 컨텍스트 밖에서도 작동
+let _audioUnlocked = false;
+function _unlockAudio() {
+  if (_audioUnlocked) return;
+  _audioUnlocked = true;
+  try {
+    // 1프레임짜리 무음 wav (base64) — autoplay 정책 unlock용
+    const silent = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    silent.volume = 0.01;
+    silent.play().catch(()=>{});
+  } catch(e) {}
+  // Web Audio context도 같이 unlock
+  try {
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  } catch(e) {}
+  // Web Speech도 미리 cancel (일부 브라우저가 첫 호출 lock)
+  try {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  } catch(e) {}
+}
+
 function hideSplash() {
+  // 사용자 제스처 컨텍스트 안에서 즉시 audio unlock
+  _unlockAudio();
   document.getElementById('splash').classList.add('hidden');
   // splash 사라진 후 cursor highlight 정리
   _clearDotpadFocus();
