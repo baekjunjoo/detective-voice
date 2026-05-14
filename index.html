@@ -2349,26 +2349,11 @@ function ensureAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }
-// ============================================================
-// 누아르 재즈 BGM
-// ──────────────────────────────────────────────────────────
-// 레이어:
-//   1) 빗소리 (filtered brown noise)
-//   2) 베이스 드론 (A1=55Hz + E2=82.5Hz, 완전5도 — 따뜻한 누아르 톤)
-//   3) 재즈 코드 진행 (Am7 → Dm7 → G7 → Cmaj7, 각 5초)
-//   4) 가끔 멜로디 음 (A 마이너 펜타토닉, 비브라폰 톤)
-// ============================================================
 function startBGM() {
   if (bgmNodes) return;
   ensureAudio();
-  const ctx = audioCtx;
-  const master = ctx.createGain();
-  master.gain.value = 1.0;
-  master.connect(ctx.destination);
-
-  // === 1. 빗소리 (brown noise lowpass) ===
-  const bufferSize = ctx.sampleRate * 3;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const bufferSize = audioCtx.sampleRate * 2;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
   const data = buffer.getChannelData(0);
   let lastOut = 0;
   for (let i = 0; i < bufferSize; i++) {
@@ -2377,128 +2362,39 @@ function startBGM() {
     lastOut = data[i];
     data[i] *= 3.5;
   }
-  const noise = ctx.createBufferSource();
+  const noise = audioCtx.createBufferSource();
   noise.buffer = buffer; noise.loop = true;
-  const noiseFilter = ctx.createBiquadFilter();
-  noiseFilter.type = 'lowpass'; noiseFilter.frequency.value = 500;
-  noiseFilter.Q.value = 0.7;
-  const noiseGain = ctx.createGain();
-  noiseGain.gain.value = 0.025;
-  noise.connect(noiseFilter).connect(noiseGain).connect(master);
+  const noiseFilter = audioCtx.createBiquadFilter();
+  noiseFilter.type = 'lowpass'; noiseFilter.frequency.value = 600;
+  const noiseGain = audioCtx.createGain(); noiseGain.gain.value = 0.035;
+  noise.connect(noiseFilter).connect(noiseGain).connect(audioCtx.destination);
   noise.start();
-
-  // === 2. 베이스 드론 (A1 + E2, 완전5도) ===
-  const droneA = ctx.createOscillator();
-  droneA.type = 'sine'; droneA.frequency.value = 55;     // A1
-  const droneAGain = ctx.createGain(); droneAGain.gain.value = 0.022;
-  droneA.connect(droneAGain).connect(master);
-  droneA.start();
-
-  const droneE = ctx.createOscillator();
-  droneE.type = 'sine'; droneE.frequency.value = 82.41;  // E2 (완전5도)
-  const droneEGain = ctx.createGain(); droneEGain.gain.value = 0.011;
-  droneE.connect(droneEGain).connect(master);
-  droneE.start();
-
-  // 드론에 미세한 LFO (호흡 효과)
-  const lfo = ctx.createOscillator();
-  lfo.frequency.value = 0.08;
-  const lfoGain = ctx.createGain();
-  lfoGain.gain.value = 0.005;
-  lfo.connect(lfoGain).connect(droneAGain.gain);
-  lfo.start();
-
-  // === 3. 재즈 코드 진행 (Am7 — Dm7 — G7 — Cmaj7) ===
-  const chords = [
-    // Am7: A C E G (마이너 7th, 누아르 정서)
-    [220.00, 261.63, 329.63, 392.00],
-    // Dm7: D F A C
-    [293.66, 349.23, 440.00, 523.25],
-    // G7: G B D F (도미넌트, 긴장)
-    [196.00, 246.94, 293.66, 349.23],
-    // Cmaj7: C E G B (해소)
-    [261.63, 329.63, 392.00, 493.88]
-  ];
-  let chordIdx = 0;
-  const CHORD_LEN = 5.0;  // 한 코드 5초 → 20초 사이클
-
-  function playChord() {
+  const drone = audioCtx.createOscillator();
+  drone.type = 'sine'; drone.frequency.value = 55;
+  const droneGain = audioCtx.createGain();
+  droneGain.gain.value = 0.025;
+  drone.connect(droneGain).connect(audioCtx.destination);
+  drone.start();
+  const scale = [220, 277.18, 329.63, 349.23, 415.30];
+  function playNote() {
     if (!bgmNodes) return;
-    const chord = chords[chordIdx];
-    const now = ctx.currentTime;
-    chord.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      // 1번째는 sine (베이스 음), 나머지는 triangle (소프트 화음)
-      osc.type = i === 0 ? 'sine' : 'triangle';
-      osc.frequency.value = freq;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(0.014, now + 1.2);     // 1.2s fade in
-      g.gain.linearRampToValueAtTime(0.010, now + CHORD_LEN - 0.5);
-      g.gain.linearRampToValueAtTime(0, now + CHORD_LEN + 0.3);
-      osc.connect(g).connect(master);
-      osc.start(now);
-      osc.stop(now + CHORD_LEN + 0.5);
-    });
-    chordIdx = (chordIdx + 1) % chords.length;
-    setTimeout(playChord, CHORD_LEN * 1000);
+    const freq = scale[Math.floor(Math.random() * scale.length)];
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle'; osc.frequency.value = freq;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.018, audioCtx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.8);
+    osc.connect(g).connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 2);
+    setTimeout(playNote, 4500 + Math.random() * 6000);
   }
-  setTimeout(playChord, 1500);
-
-  // === 4. 가끔 멜로디 (A 마이너 펜타토닉, 비브라폰 톤) ===
-  const melody = [
-    220.00,   // A3
-    261.63,   // C4
-    293.66,   // D4
-    329.63,   // E4
-    392.00,   // G4
-    440.00,   // A4
-    523.25,   // C5
-    587.33    // D5
-  ];
-  function playMelody() {
-    if (!bgmNodes) return;
-    // 35% 확률로 한 음
-    if (Math.random() < 0.35) {
-      const freq = melody[Math.floor(Math.random() * melody.length)];
-      const now = ctx.currentTime;
-      // 비브라폰: sine + 빠른 envelope
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(0.022, now + 0.04);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
-      osc.connect(g).connect(master);
-      osc.start(now); osc.stop(now + 3.0);
-
-      // 옥타브 위로 살짝 (비브라폰 효과)
-      const osc2 = ctx.createOscillator();
-      osc2.type = 'sine';
-      osc2.frequency.value = freq * 2;
-      const g2 = ctx.createGain();
-      g2.gain.setValueAtTime(0, now);
-      g2.gain.linearRampToValueAtTime(0.008, now + 0.04);
-      g2.gain.exponentialRampToValueAtTime(0.0001, now + 1.5);
-      osc2.connect(g2).connect(master);
-      osc2.start(now); osc2.stop(now + 1.6);
-    }
-    setTimeout(playMelody, 4500 + Math.random() * 5000);
-  }
-  setTimeout(playMelody, 3500);
-
-  bgmNodes = { noise, droneA, droneE, lfo, master };
+  setTimeout(playNote, 2500);
+  bgmNodes = { noise, drone };
 }
-
 function stopBGM() {
   if (bgmNodes) {
-    try {
-      bgmNodes.noise.stop();
-      bgmNodes.droneA.stop();
-      bgmNodes.droneE.stop();
-      bgmNodes.lfo.stop();
-    } catch(e) {}
+    try { bgmNodes.noise.stop(); bgmNodes.drone.stop(); } catch(e) {}
     bgmNodes = null;
   }
 }
@@ -3124,7 +3020,7 @@ function hideSplash() {
   _clearDotpadFocus();
   // Dot Pad 연결되어 있으면 브리핑 화면 sync
   if (state.dotpadConnected) setTimeout(syncDotpadToScreen, 100);
-  // BGM 자동 시작 (Voice와 동시에 누아르 분위기 살림) — 사용자가 끄려면 헤더 BGM 버튼
+  // BGM 자동 시작 (Voice와 동시) — 사용자가 끄려면 헤더 BGM 버튼
   if (!state.bgmOn) {
     state.bgmOn = true;
     startBGM();
@@ -3132,6 +3028,17 @@ function hideSplash() {
     if (bgmBtn) {
       bgmBtn.classList.add('active');
       bgmBtn.setAttribute('aria-pressed', 'true');
+    }
+  }
+  // 첫 Aria 발화 — user gesture 컨텍스트 안에서 즉시 호출 (autoplay 정책 우회)
+  if (state.ttsOn) {
+    const bubble = document.querySelector('.aria-bubble .text');
+    if (bubble) {
+      const text = (bubble.innerText || bubble.textContent || '').trim();
+      if (text) {
+        // 1프레임 후 호출 — DOM 안정화 + 여전히 user gesture 안
+        requestAnimationFrame(() => speak(text));
+      }
     }
   }
   // 설정 모달은 사용자가 헤더 Settings 버튼 누를 때만 표시 (자동 표시 제거)
