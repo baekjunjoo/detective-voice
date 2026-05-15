@@ -756,6 +756,14 @@
     text-transform: uppercase;
   }
   
+    
+    /* Notes — 단서 버튼 (Dot Pad cursor 친화) */
+    .clue-btn { display:block; width:100%; text-align:left; background:transparent;
+      border:1.5px solid var(--fg-faint); color:var(--fg-soft); padding:11px 14px;
+      margin:6px 0; font-size:13px; font-family:inherit; cursor:pointer;
+      letter-spacing:0.02em; line-height:1.5; transition:all 0.15s; }
+    .clue-btn:hover { border-color:var(--fg-dim); color:var(--fg); background:rgba(255,255,255,0.03); }
+    .clue-btn.dotpad-focus { outline:3px solid var(--accent); outline-offset:2px; }
     /* Deduction button group — Dot Pad 친화 */
     .ded-group { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
     .ded-opt-btn { background:transparent; border:1.5px solid var(--fg-faint); color:var(--fg-soft);
@@ -1915,6 +1923,24 @@ function dotpadAvailable() {
   return dotpadReady && !!window.DotPad;
 }
 
+// 닷패드 연결 시 키 안내 음성 + 점자 (한 번만)
+let _dotpadGuideAnnounced = false;
+function announceDotpadKeyGuide() {
+  if (_dotpadGuideAnnounced) return;
+  _dotpadGuideAnnounced = true;
+  setTimeout(() => {
+    const guide = T().dotpadKeyGuide;
+    if (!guide) return;
+    if (state.ttsOn) {
+      // 이전 발화 중단 후 키 안내 우선
+      try { stopSpeaking(); } catch(e){}
+      speak(guide);
+    }
+    if (state.dotpadConnected) brailleSetText(guide);
+    console.log('[Dot Pad] key guide announced');
+  }, 600);
+}
+
 async function connectDotpadBle() {
   if (!dotpadAvailable()) { alert('Dot Pad SDK not loaded'); return; }
   try {
@@ -1928,6 +1954,7 @@ async function connectDotpadBle() {
       state.dotpadName = device.name || 'Dot Pad';
       updateDotpadStatus();
       toggleDotpadPopup(false);
+      announceDotpadKeyGuide(); // 연결 직후 키 안내 음성 + 점자
     }
   } catch (e) {
     console.error('BLE connect failed:', e);
@@ -1948,6 +1975,7 @@ async function connectDotpadUsb() {
       state.dotpadName = 'USB Dot Pad';
       updateDotpadStatus();
       toggleDotpadPopup(false);
+      announceDotpadKeyGuide(); // 연결 직후 키 안내 음성 + 점자
     }
   } catch (e) {
     console.error('USB connect failed:', e);
@@ -2040,7 +2068,7 @@ function dotpadCurrentItems() {
     return _scope('.primary-btn');
   }
   if (state.dotpadNotesOpen || document.querySelector('.notebook')) {
-    return _scope('.aria-bubble .speak-btn, .primary-btn');
+    return _scope('.aria-bubble .speak-btn, .clue-btn, .primary-btn');
   }
   if (state.stage === 'briefing') {
     return _scope('.aria-bubble .speak-btn, .primary-btn');
@@ -2100,9 +2128,15 @@ function dotpadMove(dir) {
   if (!items.length) return;
   state.dotpadCursor = (state.dotpadCursor + dir + items.length) % items.length;
   dotpadHighlight();
-  // 점자 영역만 갱신 (음성 중첩 방지 — 자동재생 중인 Aria 발화를 끊지 않음)
   const text = dotpadItemText(items[state.dotpadCursor]);
-  if (text) brailleSetText(text);
+  if (!text) return;
+  // 점자 갱신
+  brailleSetText(text);
+  // 음성 출력 — 이전 발화는 중단하고 현재 항목 즉시 발화 (스크린리더 스타일)
+  if (state.ttsOn) {
+    try { stopSpeaking(); } catch(e){}
+    speak(text);
+  }
 }
 
 function dotpadSelect() {
@@ -2213,10 +2247,24 @@ function chunkBrailleHexByWords(hex, cellsPerPage) {
 function brailleSetText(text) {
   if (!text || !state.dotpadConnected) { state.braillePages = []; return; }
   const cleanText = String(text).replace(/\[(.*?)\]/g, '').trim();
+  console.log('[Braille] input · lang:', state.lang, '· chars:', cleanText.length, '· preview:', cleanText.substring(0,40));
   const hex = textToBrailleHex(cleanText, state.lang);
   state.braillePages = [];
-  if (!hex) {
-    console.log('[Braille] no hex generated for:', cleanText.substring(0,40));
+  if (!hex || hex.length === 0) {
+    console.warn('[Braille] EMPTY hex · lang:', state.lang, '· text:', cleanText.substring(0,40));
+    // 한국어가 비었을 때 — 영문 transliteration 시도 (마지막 안전망)
+    if (state.lang === 'ko') {
+      const fallback = textToBrailleHex(cleanText, 'en');
+      if (fallback) {
+        state.braillePages = chunkBrailleHexByWords(fallback, 20);
+        state.brailleIdx = 0;
+        showBraillePage();
+        console.log('[Braille] ko empty → en fallback applied · pages:', state.braillePages.length);
+        flashBrailleHint('ko empty · en fallback');
+      } else {
+        flashBrailleHint('Braille empty (ko)');
+      }
+    }
     return;
   }
   // 워드랩 — 공백(00 hex pair) 경계에서 잘라 단어 중간 깨지지 않게
@@ -2255,42 +2303,62 @@ function _dotsToHex(dots) {
 // 점자 유니코드 문자열 → 8-bit hex
 function brailleUnicodeToHex(s) {
   let hex = '';
+  let skipped = 0;
   for (const c of s) {
     const code = c.codePointAt(0);
     if (code >= 0x2800 && code <= 0x28FF) {
       const dots = code - 0x2800; // 0~255, 각 bit가 dot 1~8
       hex += dots.toString(16).padStart(2, '0').toUpperCase();
-    } else if (c === ' ') {
+    } else if (c === ' ' || c === '\u00a0') {
       hex += '00';
+    } else if (c === '\n' || c === '\r' || c === '\t') {
+      hex += '00';
+    } else {
+      // 그 외 문자 — liblouis가 변환 못한 텍스트. 카운트만.
+      skipped++;
     }
-    // 그 외 문자는 무시
+  }
+  if (skipped > 0 && skipped > s.length * 0.5) {
+    console.warn('[braille hex] too many non-braille chars skipped:', skipped, '/', s.length, '· first 16:', s.substring(0,16));
   }
   return hex;
 }
 
 // liblouis로 텍스트 → 점자 hex (grade-2)
 function _liblouisToHex(text, lang) {
-  if (!window.LiblouisReady || !window.liblouis) return null;
+  if (!window.LiblouisReady || !window.liblouis) {
+    console.log('[liblouis] not ready — LiblouisReady:', window.LiblouisReady);
+    return null;
+  }
   // 언어별 테이블 우선순위 — 한국어는 g2/g1/2006-g1 순으로 fallback
   const tables = (lang === 'ko')
     ? ['ko-g2.ctb', 'ko-g1.ctb', 'ko-2006-g1.ctb']
     : ['en-us-g2.ctb', 'en-us-g1.ctb'];
+
+  // 한국어는 NFC와 NFD 둘 다 시도 (자모 분해 후 더 잘 처리되는 경우 있음)
+  const variants = (lang === 'ko')
+    ? [text, text.normalize('NFD'), text.normalize('NFC')]
+    : [text];
+
   for (const table of tables) {
-    try {
-      const brl = window.liblouis.translateString(table, text);
-      if (brl) {
-        const hex = brailleUnicodeToHex(brl);
-        if (hex) {
-          // 첫 번째 성공한 테이블만 로그 (디버깅)
-          if (table !== tables[0]) console.log('[liblouis] fallback table used:', table);
-          return hex;
+    for (const variant of variants) {
+      try {
+        const brl = window.liblouis.translateString(table, variant);
+        if (brl) {
+          const hex = brailleUnicodeToHex(brl);
+          if (hex && hex.length > 0) {
+            console.log('[liblouis] OK · table:', table, '· input chars:', variant.length, '· brl chars:', brl.length, '· hex chars:', hex.length, '· preview:', brl.substring(0,16));
+            return hex;
+          } else {
+            console.log('[liblouis] empty hex · table:', table, '· brl:', JSON.stringify(brl.substring(0,16)));
+          }
         }
+      } catch (e) {
+        console.warn('[liblouis] table failed:', table, e.message || e);
       }
-    } catch (e) {
-      console.warn('[liblouis] table failed:', table, e.message || e);
     }
   }
-  console.warn('[liblouis] all tables failed for lang:', lang);
+  console.warn('[liblouis] all tables failed for lang:', lang, '· input:', text.substring(0,40));
   return null;
 }
 
@@ -2913,35 +2981,51 @@ async function askFree(npcId) {
 function showNotes() {
   state.dotpadNotesOpen = true;
   let html = renderHeader(T().stageCaseNotes, T().notesTitle, T().notesSub(state.discovered.size));
+
+  // ARIA 안내 — 시각장애 사용자에게 화면이 열렸음을 음성으로 알림
+  const intro = state.discovered.size === 0
+    ? T().notesEmpty
+    : (state.lang === 'ko'
+        ? `발견한 단서 ${state.discovered.size}개. F1, F2로 단서를 넘기고 가운데 팬 키로 다시 들으세요.`
+        : `${state.discovered.size} clue${state.discovered.size===1?'':'s'} found. Use F1, F2 to step through, press center pan to replay.`);
+  html += ariaSay(intro);
+
   html += `<div class="notebook"><div class="nb-title">${T().notesHeader}</div>`;
-  // 점자/음성용 텍스트 모음
   const clueLines = [];
   if (state.discovered.size === 0) {
     html += `<div class="empty">${T().notesEmpty}</div>`;
     clueLines.push(T().notesEmpty);
   } else {
-    html += `<ul>`;
+    // 각 단서를 button으로 — F1/F2 cursor가 잡고 F3로 음성·점자 재출력
     state.discovered.forEach(id => {
       if (L().evidenceMap[id]) {
-        html += `<li>${L().evidenceMap[id]}</li>`;
-        // 점자 출력용 — 평문만 (괄호/대시 노이즈 줄임)
         const plain = L().evidenceMap[id].replace(/[\[\]]/g, '').trim();
+        const esc = plain.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        html += `<button class="clue-btn" onclick="speakClue(${JSON.stringify(plain).replace(/"/g, '&quot;')})">${L().evidenceMap[id]}</button>`;
         clueLines.push(plain);
       }
     });
-    html += `</ul>`;
   }
   html += `</div>
     <button class="primary-btn" onclick="state.dotpadNotesOpen=false;render()">${T().btnClose}</button>`;
   shell().innerHTML = html;
   if (state.dotpadConnected) {
     setTimeout(dotpadOnRender, 50);
-    // 노트 내용을 점자로 출력 — 페이지 넘기기로 단서별 확인 가능
     setTimeout(() => {
       const joined = clueLines.join('. ');
       if (joined) brailleSetText(joined);
-    }, 100);
+    }, 150);
   }
+}
+
+// 단서 button 클릭 — 음성 + 점자 동시 출력
+function speakClue(text) {
+  if (!text) return;
+  if (state.ttsOn) {
+    try { stopSpeaking(); } catch(e){}
+    speak(text);
+  }
+  if (state.dotpadConnected) brailleSetText(text);
 }
 
 function renderDeduction() {
@@ -3166,12 +3250,7 @@ function hideSplash() {
         requestAnimationFrame(() => speak(text));
       }
     }
-    // Dot Pad가 연결되어 있으면 키 안내 음성도 한 번 더 (브리핑 발화 직후)
-    if (state.dotpadConnected) {
-      setTimeout(() => {
-        if (state.ttsOn && T().dotpadKeyGuide) speak(T().dotpadKeyGuide);
-      }, 5500);
-    }
+    // 키 안내는 연결 시점에 announceDotpadKeyGuide()가 처리
   }
   // 설정 모달은 사용자가 헤더 Settings 버튼 누를 때만 표시 (자동 표시 제거)
 }
