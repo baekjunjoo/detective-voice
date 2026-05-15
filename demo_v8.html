@@ -755,7 +755,16 @@
     font-weight: 600;
     text-transform: uppercase;
   }
-  .deduction-form select {
+  
+    /* Deduction button group — Dot Pad 친화 */
+    .ded-group { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+    .ded-opt-btn { background:transparent; border:1.5px solid var(--fg-faint); color:var(--fg-soft);
+      padding:9px 13px; font-size:13px; font-family:inherit; cursor:pointer; letter-spacing:0.03em;
+      transition:all 0.15s; }
+    .ded-opt-btn:hover { border-color:var(--fg-dim); color:var(--fg); background:rgba(255,255,255,0.03); }
+    .ded-opt-btn.active { background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:700; }
+    .ded-opt-btn.dotpad-focus { outline:3px solid var(--accent); outline-offset:2px; }
+    .deduction-form select {
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--fg-faint);
@@ -1517,6 +1526,10 @@ const UI_TEXT = {
     splashTitle: '마지막 손님',
     splashSub: '시그니처 사건 #1',
     splashSignal: '화면을 보지 마세요. 귀로 들으세요.',
+    dotpadKeyGuide: '닷 패드 사용 안내. F1 이전 항목. F2 다음 항목. F3 선택. F4 사건 노트 열기와 닫기. 좌측 팬 키 점자 이전 페이지. 우측 팬 키 점자 다음 페이지. 가운데 팬 키 현재 안내 음성 다시 듣기.',
+    btnKeyGuide: '▸ 닷 패드 키 안내 듣기',
+    btnBackToBriefing: '▸ 처음으로 돌아가기',
+    btnBackToStart: '▸ 시작 화면으로',
     // 자유 입력
     freeLabel: '▸ 자유 입력 (AI 모드)',
     freePlaceholder: '자유롭게 질문하세요...',
@@ -1628,6 +1641,10 @@ const UI_TEXT = {
     splashTitle: 'The Last Customer',
     splashSub: 'Signature Case #1',
     splashSignal: "Don't look at the screen. Listen.",
+    dotpadKeyGuide: 'Dot Pad keys. F1 previous item. F2 next item. F3 select. F4 open and close case notes. Left pan key previous braille page. Right pan key next braille page. Center pan key replay current voice prompt.',
+    btnKeyGuide: '▸ Hear Dot Pad key guide',
+    btnBackToBriefing: '▸ Back to start',
+    btnBackToStart: '▸ Back to title screen',
     freeLabel: '▸ Free input (AI mode)',
     freePlaceholder: 'Ask anything...',
     orPreset: '— or use a preset question —',
@@ -2023,22 +2040,22 @@ function dotpadCurrentItems() {
     return _scope('.primary-btn');
   }
   if (state.dotpadNotesOpen || document.querySelector('.notebook')) {
-    return _scope('.primary-btn');
+    return _scope('.aria-bubble .speak-btn, .primary-btn');
   }
   if (state.stage === 'briefing') {
-    return _scope('.primary-btn');
+    return _scope('.aria-bubble .speak-btn, .primary-btn');
   }
   if (state.stage === 'investigation') {
-    return _scope('.scene-block .card, .primary-btn, .ghost-btn');
+    return _scope('.aria-bubble .speak-btn, .scene-block .card, .primary-btn, .ghost-btn');
   }
   if (state.stage === 'interrogation' && !state.currentNpc) {
-    return _scope('.npc-card, .primary-btn, .ghost-btn');
+    return _scope('.aria-bubble .speak-btn, .npc-card, .primary-btn, .ghost-btn');
   }
   if (state.stage === 'interrogation' && state.currentNpc) {
-    return _scope('.q-btn:not([disabled]), .ghost-btn');
+    return _scope('.aria-bubble .speak-btn, .q-btn:not([disabled]), .primary-btn, .ghost-btn');
   }
   if (state.stage === 'deduction') {
-    return _scope('.deduction-form select, .primary-btn, .ghost-btn');
+    return _scope('.aria-bubble .speak-btn, .ded-opt-btn, .primary-btn, .ghost-btn');
   }
   return [];
 }
@@ -2158,6 +2175,41 @@ function showBraillePage() {
   } catch(e) {}
 }
 
+// 워드랩 — hex 문자열을 셀 단위 페이지로 자르되, 공백(00) 경계 우선
+function chunkBrailleHexByWords(hex, cellsPerPage) {
+  const cellChars = 2; // 1 cell = 2 hex chars (8-bit)
+  const pageChars = cellsPerPage * cellChars; // 40 chars per page
+  const pages = [];
+  let pos = 0;
+  while (pos < hex.length) {
+    let end = Math.min(pos + pageChars, hex.length);
+    // 페이지가 끝나는 위치가 단어 중간이면 (00 셀 전까지) 뒤로 줄임
+    if (end < hex.length) {
+      // 페이지 안에서 마지막 공백(00) 위치 찾기
+      let lastSpace = -1;
+      for (let i = end - cellChars; i >= pos + cellChars; i -= cellChars) {
+        if (hex.substring(i, i + cellChars) === '00') {
+          lastSpace = i + cellChars; // 공백 직후를 다음 페이지로
+          break;
+        }
+      }
+      if (lastSpace > pos) {
+        end = lastSpace;
+      }
+      // 공백 없으면 그냥 잘라냄 (긴 단어 hyphenless wrap)
+    }
+    let chunk = hex.substring(pos, end);
+    // 선행 공백 제거 (이전 페이지 끝 단어 잘림 흔적)
+    while (chunk.startsWith('00') && chunk.length > 0) chunk = chunk.substring(2);
+    if (chunk.length > 0) {
+      pages.push(chunk.padEnd(pageChars, '0'));
+    }
+    pos = end;
+  }
+  if (pages.length === 0) pages.push('0'.repeat(pageChars));
+  return pages;
+}
+
 function brailleSetText(text) {
   if (!text || !state.dotpadConnected) { state.braillePages = []; return; }
   const cleanText = String(text).replace(/\[(.*?)\]/g, '').trim();
@@ -2167,9 +2219,8 @@ function brailleSetText(text) {
     console.log('[Braille] no hex generated for:', cleanText.substring(0,40));
     return;
   }
-  for (let i = 0; i < hex.length; i += 40) {
-    state.braillePages.push(hex.substring(i, i + 40).padEnd(40, '0'));
-  }
+  // 워드랩 — 공백(00 hex pair) 경계에서 잘라 단어 중간 깨지지 않게
+  state.braillePages = chunkBrailleHexByWords(hex, 20); // 20 cells per page
   state.brailleIdx = 0;
   showBraillePage();
   console.log('[Braille] new text · pages:', state.braillePages.length, '· text:', cleanText.substring(0,60) + (cleanText.length > 60 ? '...' : ''));
@@ -2220,17 +2271,27 @@ function brailleUnicodeToHex(s) {
 // liblouis로 텍스트 → 점자 hex (grade-2)
 function _liblouisToHex(text, lang) {
   if (!window.LiblouisReady || !window.liblouis) return null;
-  try {
-    // 영어 grade-2: en-us-g2.ctb (Unified English Braille)
-    // 한국어 grade-2: ko-g2.ctb (의존 테이블 자동 로드)
-    const table = (lang === 'ko') ? 'ko-g2.ctb' : 'en-us-g2.ctb';
-    const brl = window.liblouis.translateString(table, text);
-    if (!brl) return null;
-    return brailleUnicodeToHex(brl);
-  } catch (e) {
-    console.warn('[liblouis] translate failed:', e.message || e);
-    return null;
+  // 언어별 테이블 우선순위 — 한국어는 g2/g1/2006-g1 순으로 fallback
+  const tables = (lang === 'ko')
+    ? ['ko-g2.ctb', 'ko-g1.ctb', 'ko-2006-g1.ctb']
+    : ['en-us-g2.ctb', 'en-us-g1.ctb'];
+  for (const table of tables) {
+    try {
+      const brl = window.liblouis.translateString(table, text);
+      if (brl) {
+        const hex = brailleUnicodeToHex(brl);
+        if (hex) {
+          // 첫 번째 성공한 테이블만 로그 (디버깅)
+          if (table !== tables[0]) console.log('[liblouis] fallback table used:', table);
+          return hex;
+        }
+      }
+    } catch (e) {
+      console.warn('[liblouis] table failed:', table, e.message || e);
+    }
   }
+  console.warn('[liblouis] all tables failed for lang:', lang);
+  return null;
 }
 
 function textToBrailleHex(text, lang) {
@@ -2707,6 +2768,7 @@ function renderInvestigation() {
   html += `<div style="margin-top:18px">
     <button class="primary-btn" onclick="state.stage='interrogation';state.currentNpc=null;render()">${T().btnInterrogate}</button>
     <button class="ghost-btn" onclick="showNotes()">${T().btnNotes(state.discovered.size)}</button>
+    <button class="ghost-btn" onclick="state.stage='briefing';render()">${T().btnBackToBriefing}</button>
   </div>`;
   shell().innerHTML = html;
 }
@@ -2746,6 +2808,7 @@ function renderInterrogationList() {
     <button class="primary-btn" onclick="state.stage='deduction';render()">${T().btnGoToDeduction}</button>
     <button class="ghost-btn" onclick="state.stage='investigation';render()">${T().btnBackToScene}</button>
     <button class="ghost-btn" onclick="showNotes()">${T().btnNotes(state.discovered.size)}</button>
+    <button class="ghost-btn" onclick="state.stage='briefing';render()">${T().btnBackToBriefing}</button>
   </div>`;
   shell().innerHTML = html;
 }
@@ -2803,6 +2866,7 @@ function renderInterrogationDetail(npcId) {
     <div style="margin-top:18px">
       <button class="ghost-btn" onclick="state.currentNpc=null;render()">${T().btnOtherPerson}</button>
       <button class="ghost-btn" onclick="showNotes()">${T().btnNotes(state.discovered.size)}</button>
+      <button class="ghost-btn" onclick="state.stage='briefing';state.currentNpc=null;render()">${T().btnBackToBriefing}</button>
     </div>`;
   shell().innerHTML = html;
 
@@ -2850,49 +2914,109 @@ function showNotes() {
   state.dotpadNotesOpen = true;
   let html = renderHeader(T().stageCaseNotes, T().notesTitle, T().notesSub(state.discovered.size));
   html += `<div class="notebook"><div class="nb-title">${T().notesHeader}</div>`;
+  // 점자/음성용 텍스트 모음
+  const clueLines = [];
   if (state.discovered.size === 0) {
     html += `<div class="empty">${T().notesEmpty}</div>`;
+    clueLines.push(T().notesEmpty);
   } else {
     html += `<ul>`;
     state.discovered.forEach(id => {
-      if (L().evidenceMap[id]) html += `<li>${L().evidenceMap[id]}</li>`;
+      if (L().evidenceMap[id]) {
+        html += `<li>${L().evidenceMap[id]}</li>`;
+        // 점자 출력용 — 평문만 (괄호/대시 노이즈 줄임)
+        const plain = L().evidenceMap[id].replace(/[\[\]]/g, '').trim();
+        clueLines.push(plain);
+      }
     });
     html += `</ul>`;
   }
   html += `</div>
     <button class="primary-btn" onclick="state.dotpadNotesOpen=false;render()">${T().btnClose}</button>`;
   shell().innerHTML = html;
-  if (state.dotpadConnected) setTimeout(dotpadOnRender, 50);
+  if (state.dotpadConnected) {
+    setTimeout(dotpadOnRender, 50);
+    // 노트 내용을 점자로 출력 — 페이지 넘기기로 단서별 확인 가능
+    setTimeout(() => {
+      const joined = clueLines.join('. ');
+      if (joined) brailleSetText(joined);
+    }, 100);
+  }
 }
 
 function renderDeduction() {
+  // 단일 선택 상태 (button group) — state에 저장하여 render 사이 유지
+  if (!state.dedChoice) state.dedChoice = { culprit: '', motive: '', evs: [] };
+  const ch = state.dedChoice;
+  const npcOpts = L().npcs.filter(n => n.role.toLowerCase().includes('victim') === false);
+  const motiveOpts = [
+    { v: 'affair_debt', label: T().motivePerfect },
+    { v: 'debt_only', label: T().motiveDebtOnly },
+    { v: 'affair_revenge', label: T().motiveAffair },
+    { v: 'other', label: T().motiveOther },
+  ];
+  const evLabels = state.lang === 'ko' ? {
+    ev_receipt_2342: '23:42 결제 영수증',
+    ev_wine_inventory: '와인 재고 장부',
+    ev_text_message: '정민호-김유진 메시지',
+    ev_wife_testimony: '김유진 증언',
+    ev_cctv_outside: '편의점 CCTV',
+    ev_broken_bottle: '깨진 와인병',
+    ev_autopsy: '부검 보고서'
+  } : {
+    ev_receipt_2342: '23:42 receipt',
+    ev_wine_inventory: 'Wine inventory ledger',
+    ev_text_message: 'Min-ho/Yu-jin messages',
+    ev_wife_testimony: "Kim Yu-jin's testimony",
+    ev_cctv_outside: 'Convenience store CCTV',
+    ev_broken_bottle: 'Broken wine bottle',
+    ev_autopsy: 'Autopsy report'
+  };
+  const renderBtnGroup = (groupKey, opts, isMulti) =>
+    opts.map(o => {
+      const isActive = isMulti ? ch.evs.includes(o.v) : (ch[groupKey] === o.v);
+      return `<button class="ded-opt-btn ${isActive ? 'active' : ''}"
+        data-group="${groupKey}" data-value="${o.v}"
+        onclick="dedPick('${groupKey}', '${o.v}')">${isActive ? '✓ ' : ''}${o.label}</button>`;
+    }).join('');
+
+  const culpritOpts = npcOpts.map(n => ({ v: n.id, label: n.name }));
+  const evOpts = Object.entries(evLabels).map(([k,v]) => ({ v: k, label: v }));
+
   shell().innerHTML = `
     ${renderHeader(T().stageDeduction, T().dedTitle, T().dedSub)}
     ${ariaSay(T().ariaDed)}
     <div class="deduction-form">
       <label>${T().formCulprit}</label>
-      <select id="d-culprit">
-        <option value="">${T().optSelect}</option>
-        ${L().npcs.filter(n => n.role.toLowerCase().includes('victim') === false).map(n => `<option value="${n.id}">${n.name}</option>`).join('')}
-      </select>
+      <div class="ded-group">${renderBtnGroup('culprit', culpritOpts, false)}</div>
       <label>${T().formMotive}</label>
-      <select id="d-motive">
-        <option value="">${T().optSelect}</option>
-        <option value="affair_debt">${T().motivePerfect}</option>
-        <option value="debt_only">${T().motiveDebtOnly}</option>
-        <option value="affair_revenge">${T().motiveAffair}</option>
-        <option value="other">${T().motiveOther}</option>
-      </select>
-      <label>${T().formEv(1)}</label>
-      <select id="d-ev1">${dEvOpts()}</select>
-      <label>${T().formEv(2)}</label>
-      <select id="d-ev2">${dEvOpts()}</select>
-      <label>${T().formEv(3)}</label>
-      <select id="d-ev3">${dEvOpts()}</select>
+      <div class="ded-group">${renderBtnGroup('motive', motiveOpts, false)}</div>
+      <label>${state.lang === 'ko' ? '핵심 증거 (3개 선택)' : 'Key evidence (pick 3)'}</label>
+      <div class="ded-group">${renderBtnGroup('evs', evOpts, true)}</div>
     </div>
     <button class="primary-btn" onclick="submitDeduction()" style="margin-top:18px">${T().btnAccuse}</button>
     <button class="ghost-btn" onclick="state.stage='interrogation';state.currentNpc=null;render()">${T().btnContinueInter}</button>
+    <button class="ghost-btn" onclick="state.stage='briefing';render()">${T().btnBackToBriefing}</button>
   `;
+}
+
+function dedPick(group, value) {
+  if (!state.dedChoice) state.dedChoice = { culprit: '', motive: '', evs: [] };
+  if (group === 'evs') {
+    const i = state.dedChoice.evs.indexOf(value);
+    if (i >= 0) state.dedChoice.evs.splice(i, 1);
+    else if (state.dedChoice.evs.length < 3) state.dedChoice.evs.push(value);
+    else {
+      // 이미 3개 — 가장 오래된 하나 빼고 새로 추가
+      state.dedChoice.evs.shift();
+      state.dedChoice.evs.push(value);
+    }
+  } else {
+    state.dedChoice[group] = value;
+  }
+  renderDeduction();
+  // dotpad 재동기화 — 새로 그려진 버튼에 cursor outline 복원
+  if (state.dotpadConnected) setTimeout(syncDotpadToScreen, 50);
 }
 
 function dEvOpts() {
@@ -2918,9 +3042,10 @@ function dEvOpts() {
 }
 
 function submitDeduction() {
-  const culprit = document.getElementById('d-culprit').value;
-  const motive = document.getElementById('d-motive').value;
-  const evs = ['d-ev1','d-ev2','d-ev3'].map(id => document.getElementById(id).value).filter(Boolean);
+  const ch = state.dedChoice || { culprit: '', motive: '', evs: [] };
+  const culprit = ch.culprit;
+  const motive = ch.motive;
+  const evs = ch.evs || [];
   let result;
   if (!culprit) result = { type: 'inconclusive' };
   else if (culprit !== 'park_junyoung') result = { type: 'wrong_suspect' };
@@ -2972,6 +3097,7 @@ function restart() {
   state.asked = {};
   state.npcAnxiety = {};
   state.ended = null;
+  state.dedChoice = { culprit: '', motive: '', evs: [] };
   state.currentNpc = null;
   state.npcMessages = {};
   L().npcs.forEach(n => { state.npcAnxiety[n.id] = n.anxietyStart; state.npcMessages[n.id] = []; });
@@ -3039,6 +3165,12 @@ function hideSplash() {
         // 1프레임 후 호출 — DOM 안정화 + 여전히 user gesture 안
         requestAnimationFrame(() => speak(text));
       }
+    }
+    // Dot Pad가 연결되어 있으면 키 안내 음성도 한 번 더 (브리핑 발화 직후)
+    if (state.dotpadConnected) {
+      setTimeout(() => {
+        if (state.ttsOn && T().dotpadKeyGuide) speak(T().dotpadKeyGuide);
+      }, 5500);
     }
   }
   // 설정 모달은 사용자가 헤더 Settings 버튼 누를 때만 표시 (자동 표시 제거)
